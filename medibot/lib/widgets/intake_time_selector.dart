@@ -14,8 +14,62 @@ class _IntakeTimeSelectorState extends State<IntakeTimeSelector> {
   List<Map<String, dynamic>> _selectedTimes =
       []; // ✅ {"type": "식전", "time": TimeOfDay}
   final List<String> _options = ["식전", "식후"]; // ✅ 선택 옵션
+  TimeOfDay? _globalTime; // ✅ 전체 시간 선택 변수 추가
 
-  // 📌 시간 선택 다이얼로그
+  // 📌 전체 복용 시간 선택 다이얼로그
+  void _pickGlobalTime(BuildContext context) {
+    showCupertinoModalPopup(
+      context: context,
+      builder: (BuildContext context) {
+        return Container(
+          height: 300,
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.1),
+                blurRadius: 10,
+                spreadRadius: 2,
+              ),
+            ],
+          ),
+          child: Column(
+            children: [
+              Align(
+                alignment: Alignment.topRight,
+                child: TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text(
+                    "완료",
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ),
+              Expanded(
+                child: CupertinoDatePicker(
+                  mode: CupertinoDatePickerMode.time,
+                  initialDateTime: DateTime.now(),
+                  use24hFormat: false,
+                  onDateTimeChanged: (DateTime newDate) {
+                    setState(() {
+                      _globalTime = TimeOfDay(
+                        hour: newDate.hour,
+                        minute: newDate.minute,
+                      );
+                    });
+                  },
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  // 📌 시간 선택 다이얼로그 (각 아이템별 개별 시간 선택)
   void _pickTime(BuildContext context, int index) {
     showCupertinoModalPopup(
       context: context,
@@ -72,7 +126,10 @@ class _IntakeTimeSelectorState extends State<IntakeTimeSelector> {
   // 📌 복용 시간 추가 버튼
   void _addTime(String type) {
     setState(() {
-      _selectedTimes.add({"type": type, "time": TimeOfDay.now()});
+      _selectedTimes.add({
+        "type": type,
+        "time": _globalTime ?? TimeOfDay.now(), // ✅ 전체 시간 선택 적용
+      });
       widget.onTimesSelected(_selectedTimes);
     });
   }
@@ -90,9 +147,41 @@ class _IntakeTimeSelectorState extends State<IntakeTimeSelector> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          "복용 시간 *",
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+        // 📌 "복용 시간" + 전체 시간 설정 버튼
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const Text(
+              "복용 시간 *",
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            GestureDetector(
+              onTap: () => _pickGlobalTime(context),
+              child: Container(
+                padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                decoration: BoxDecoration(
+                  color: Colors.blueAccent,
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.access_time, color: Colors.white),
+                    SizedBox(width: 8),
+                    Text(
+                      _globalTime == null
+                          ? "시간 선택"
+                          : "${_globalTime!.hourOfPeriod}:${_globalTime!.minute.toString().padLeft(2, '0')} ${_globalTime!.period == DayPeriod.am ? "AM" : "PM"}",
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
         ),
         const SizedBox(height: 12),
 
@@ -111,13 +200,6 @@ class _IntakeTimeSelectorState extends State<IntakeTimeSelector> {
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(16),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.05),
-                          blurRadius: 10,
-                          spreadRadius: 2,
-                        ),
-                      ],
                     ),
                     child: ListTile(
                       leading: Icon(
@@ -140,16 +222,15 @@ class _IntakeTimeSelectorState extends State<IntakeTimeSelector> {
                         ),
                         onPressed: () => _removeTime(index),
                       ),
-                      onTap:
-                          () => _pickTime(context, index), // ✅ 시간 클릭 시 다이얼로그 실행
+                      onTap: () => _pickTime(context, index),
                     ),
                   ),
                 );
               }).toList(),
         ),
 
-        // 📌 "식전 추가" & "식후 추가" 버튼
         const SizedBox(height: 12),
+        // 📌 "식전 추가" & "식후 추가" 버튼 (🔥 아이콘 추가 완료!)
         Row(
           children: [
             Expanded(
@@ -160,29 +241,15 @@ class _IntakeTimeSelectorState extends State<IntakeTimeSelector> {
                   decoration: BoxDecoration(
                     color: Colors.blueAccent,
                     borderRadius: BorderRadius.circular(16),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.1),
-                        blurRadius: 10,
-                        spreadRadius: 2,
-                      ),
-                    ],
                   ),
                   child: const Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(
-                        CupertinoIcons.plus_circle_fill,
-                        color: Colors.white,
-                      ),
+                      Icon(Icons.sunny, color: Colors.white),
                       SizedBox(width: 8),
                       Text(
                         "식전 추가",
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
+                        style: TextStyle(fontSize: 16, color: Colors.white),
                       ),
                     ],
                   ),
@@ -198,29 +265,15 @@ class _IntakeTimeSelectorState extends State<IntakeTimeSelector> {
                   decoration: BoxDecoration(
                     color: Colors.purpleAccent,
                     borderRadius: BorderRadius.circular(16),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.1),
-                        blurRadius: 10,
-                        spreadRadius: 2,
-                      ),
-                    ],
                   ),
                   child: const Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(
-                        CupertinoIcons.plus_circle_fill,
-                        color: Colors.white,
-                      ),
+                      Icon(Icons.nights_stay, color: Colors.white),
                       SizedBox(width: 8),
                       Text(
                         "식후 추가",
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
+                        style: TextStyle(fontSize: 16, color: Colors.white),
                       ),
                     ],
                   ),

@@ -61,11 +61,11 @@ class _MultiDatePickerState extends State<MultiDatePicker> {
               titleCentered: true,
               formatButtonVisible: false,
               leftChevronIcon: const Icon(
-                CupertinoIcons.left_chevron,
+                Icons.arrow_back_ios,
                 color: Colors.black,
               ),
               rightChevronIcon: const Icon(
-                CupertinoIcons.right_chevron,
+                Icons.arrow_forward_ios,
                 color: Colors.black,
               ),
               titleTextStyle: const TextStyle(

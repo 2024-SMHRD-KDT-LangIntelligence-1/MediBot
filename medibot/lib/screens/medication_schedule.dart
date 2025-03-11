@@ -2,6 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:table_calendar/table_calendar.dart';
 import 'package:intl/intl.dart';
+import 'MedicationDetailScreen.dart';
 
 class MedicationRecordScreen extends StatefulWidget {
   const MedicationRecordScreen({super.key});
@@ -12,11 +13,14 @@ class MedicationRecordScreen extends StatefulWidget {
 
 class _MedicationRecordScreenState extends State<MedicationRecordScreen> {
   DateTime _selectedDay = DateTime.now();
-  List<Map<String, String>> _medications = [
-    {"name": "○○", "time": "08:00 AM", "type": "식전"},
-    {"name": "고지혈약", "time": "01:00 PM", "type": "식후"},
-    {"name": "혈압약", "time": "07:00 PM", "type": "식후"},
+  List<Map<String, dynamic>> _medications = [
+    {"name": "○○", "time": "08:00 AM", "type": "식전", "taken": false},
+    {"name": "고지혈약", "time": "01:00 PM", "type": "식후", "taken": false},
+    {"name": "혈압약", "time": "07:00 PM", "type": "식후", "taken": false},
   ];
+
+  double _medicationRate = 90.0; // 복약률 예제 데이터
+  String _feedbackMessage = "👍 오늘 모든 약을 잘 챙겨 먹었어요! 🎉";
 
   void _openChatbot() {
     showModalBottomSheet(
@@ -33,20 +37,20 @@ class _MedicationRecordScreenState extends State<MedicationRecordScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.blue.shade50,
+      backgroundColor: Color(0xFFF5F5F5), // 새로운 배경색 적용
       appBar: AppBar(
         title: const Text(
-          "약 기록",
+          "복약 기록",
           style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
         ),
         backgroundColor: Colors.transparent,
         elevation: 0,
-        leading: IconButton(
-          icon: const Icon(CupertinoIcons.back, color: Colors.black),
-          onPressed: () {
-            Navigator.pop(context);
-          },
-        ),
+        // leading: IconButton(
+        //   icon: const Icon(CupertinoIcons.back, color: Colors.black),
+        //   onPressed: () {
+        //     Navigator.pop(context);
+        //   },
+        // ),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
@@ -55,13 +59,15 @@ class _MedicationRecordScreenState extends State<MedicationRecordScreen> {
             _buildRoundedCalendar(),
             const SizedBox(height: 16),
             _buildMedicationList(),
+            const SizedBox(height: 55),
+            _buildMedicationFeedback(),
           ],
         ),
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: _openChatbot,
-        child: Icon(Icons.chat),
-        backgroundColor: Colors.blue,
+        child: Icon(Icons.smart_toy, color: Colors.white),
+        backgroundColor: Color(0xFF648aed),
       ),
     );
   }
@@ -114,23 +120,22 @@ class _MedicationRecordScreenState extends State<MedicationRecordScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          "저장된 약 목록",
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-        ),
         const SizedBox(height: 8),
         Column(
           children:
-              _medications.map((med) => _buildMedicationItem(med)).toList(),
+              _medications.asMap().entries.map((entry) {
+                int index = entry.key;
+                Map<String, dynamic> med = entry.value;
+                return _buildMedicationItem(med, index); // 타입 변환 제거
+              }).toList(),
         ),
       ],
     );
   }
 
-  Widget _buildMedicationItem(Map<String, String> med) {
+  Widget _buildMedicationFeedback() {
     return Container(
-      margin: const EdgeInsets.symmetric(vertical: 6),
-      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
@@ -142,30 +147,100 @@ class _MedicationRecordScreenState extends State<MedicationRecordScreen> {
           ),
         ],
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(Icons.medication, color: Colors.blueAccent, size: 24),
-          const SizedBox(width: 12),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          Text(
+            "오늘의 복약 피드백",
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 8),
+          Row(
             children: [
+              Icon(Icons.incomplete_circle, color: Colors.blueAccent, size: 20),
+              const SizedBox(width: 8),
               Text(
-                med["name"]!,
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                "${med["time"]} | ${med["type"]}",
-                style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
+                "복약률: $_medicationRate%",
+                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
               ),
             ],
           ),
-          const Spacer(),
-          Icon(CupertinoIcons.chevron_right, color: Colors.grey, size: 20),
+          const SizedBox(height: 6),
+          Text(
+            _feedbackMessage,
+            style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
+          ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildMedicationItem(Map<String, dynamic> med, int index) {
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder:
+                (context) => MedicationDetailScreen(
+                  medication: {
+                    ...med,
+                    "intakeTimes": [
+                      {"type": med["type"], "time": med["time"]},
+                    ],
+                  },
+                ),
+          ),
+        );
+      },
+      child: Container(
+        margin: const EdgeInsets.symmetric(vertical: 6),
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 8,
+              spreadRadius: 2,
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Icon(Icons.medication, color: Colors.blueAccent, size: 24),
+            const SizedBox(width: 12),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  med["name"],
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  "${med["time"]} | ${med["type"]}",
+                  style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
+                ),
+              ],
+            ),
+            const Spacer(),
+            Checkbox(
+              value: med["taken"] ?? false,
+              onChanged: (bool? newValue) {
+                setState(() {
+                  _medications[index]["taken"] = newValue;
+                });
+              },
+            ),
+            // const SizedBox(width: 8),
+            // Icon(Icons.keyboard_arrow_right, color: Colors.grey, size: 20),
+          ],
+        ),
       ),
     );
   }
