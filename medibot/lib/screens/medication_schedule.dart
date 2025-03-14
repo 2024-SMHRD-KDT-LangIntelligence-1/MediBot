@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:table_calendar/table_calendar.dart';
 import 'package:intl/intl.dart';
 import 'MedicationDetailScreen.dart';
+import 'ChatBotScreen.dart';
 
 class MedicationRecordScreen extends StatefulWidget {
   const MedicationRecordScreen({super.key});
@@ -25,11 +26,15 @@ class _MedicationRecordScreenState extends State<MedicationRecordScreen> {
   void _openChatbot() {
     showModalBottomSheet(
       context: context,
+      isScrollControlled: true, // 🟢 화면을 최대한 크게 확장
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (context) {
-        return ChatBotScreen();
+        return FractionallySizedBox(
+          heightFactor: 0.85, // 🟢 화면의 85% 차지 (더 크게 설정)
+          child: ChatBotScreen(),
+        );
       },
     );
   }
@@ -241,76 +246,6 @@ class _MedicationRecordScreenState extends State<MedicationRecordScreen> {
             // Icon(Icons.keyboard_arrow_right, color: Colors.grey, size: 20),
           ],
         ),
-      ),
-    );
-  }
-}
-
-class ChatBotScreen extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      height: 450,
-      padding: EdgeInsets.all(16.0),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            blurRadius: 10,
-            spreadRadius: 2,
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          Container(
-            width: 40,
-            height: 5,
-            decoration: BoxDecoration(
-              color: Colors.grey.shade300,
-              borderRadius: BorderRadius.circular(10),
-            ),
-          ),
-          const SizedBox(height: 10),
-          const Text(
-            "챗봇",
-            style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-          ),
-          const Divider(thickness: 1, height: 20),
-          Expanded(
-            child: Center(
-              child: Text(
-                "챗봇 메시지 영역",
-                style: TextStyle(fontSize: 16, color: Colors.grey),
-              ),
-            ),
-          ),
-          Container(
-            padding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-            decoration: BoxDecoration(
-              color: Colors.grey.shade100,
-              borderRadius: BorderRadius.circular(30),
-            ),
-            child: Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    decoration: InputDecoration(
-                      hintText: "메시지를 입력하세요...",
-                      border: InputBorder.none,
-                    ),
-                  ),
-                ),
-                CircleAvatar(
-                  backgroundColor: Colors.blueAccent,
-                  child: Icon(Icons.send, color: Colors.white),
-                ),
-              ],
-            ),
-          ),
-        ],
       ),
     );
   }

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:medibot/screens/signup.dart';
 import '../screens/home_screen.dart';
 import '../screens/medication_registration_screen.dart';
+import '../screens/signup.dart';
 
 class BottomNavBar extends StatefulWidget {
   const BottomNavBar({super.key});
@@ -16,7 +18,7 @@ class _BottomNavBarState extends State<BottomNavBar> {
   final List<Widget> _pages = [
     const HomeScreen(),
     const MedicationRegistrationScreen(), // TODO: 다른 화면 추가
-    const Placeholder(), // TODO: 다른 화면 추가
+    SignUpScreen(), // TODO: 다른 화면 추가
   ];
 
   void _onItemTapped(int index) {
@@ -36,7 +38,7 @@ class _BottomNavBarState extends State<BottomNavBar> {
             icon: Icon(Icons.medical_services),
             label: '약물',
           ),
-          BottomNavigationBarItem(icon: Icon(Icons.settings), label: '설정'),
+          BottomNavigationBarItem(icon: Icon(Icons.person), label: '내 정보'),
         ],
         currentIndex: _selectedIndex,
         selectedItemColor: Colors.blueAccent,
