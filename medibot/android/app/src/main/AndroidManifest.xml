@@ -1,8 +1,30 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+  <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
+  <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
+  <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+
     <application
         android:label="medibot"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
+        <receiver android:name="com.dexterous.flutterlocalnotifications.receivers.NotificationBroadcastReceiver" android:exported="true" />
+        <receiver android:name="com.dexterous.flutterlocalnotifications.receivers.ScheduledNotificationReceiver" android:exported="true" />
+        <receiver android:name="com.dexterous.flutterlocalnotifications.receivers.ActionBroadcastReceiver" android:exported="true" />
+    
+    <!-- 🟢 부팅 후 자동 복약 알림 설정 (앱 재시작 후에도 알림 유지) -->
+     <receiver
+        android:name="com.dexterous.flutterlocalnotifications.receivers.NotificationBootReceiver"
+        android:exported="true">
+        <intent-filter>
+           <action android:name="android.intent.action.BOOT_COMPLETED"/>
+            <action android:name="android.intent.action.MY_PACKAGE_REPLACED"/>
+        </intent-filter>
+    </receiver>
+    
+    <!-- 🟢 알림 채널 설정 -->
+    <meta-data
+        android:name="com.google.firebase.messaging.default_notification_channel_id"
+        android:value="medication_channel"/>
         <activity
             android:name=".MainActivity"
             android:exported="true"

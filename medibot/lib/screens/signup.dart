@@ -59,6 +59,16 @@ class _SignUpScreenState extends State<SignUpScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        iconTheme: IconThemeData(color: Colors.black),
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back), // ✅ 뒤로 가기 버튼 추가
+          onPressed: () {
+            Navigator.pop(context); // ✅ 뒤로 가기 기능 추가
+          },
+        ),
+      ),
       backgroundColor: kBackgroundColor,
       body: SingleChildScrollView(
         padding: EdgeInsets.symmetric(horizontal: 24),

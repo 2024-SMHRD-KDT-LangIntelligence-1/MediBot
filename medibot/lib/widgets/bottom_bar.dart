@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:medibot/screens/MyProfileScreen.dart';
 import 'package:medibot/screens/signup.dart';
 import '../screens/home_screen.dart';
 import '../screens/medication_registration_screen.dart';
@@ -18,7 +19,7 @@ class _BottomNavBarState extends State<BottomNavBar> {
   final List<Widget> _pages = [
     const HomeScreen(),
     const MedicationRegistrationScreen(), // TODO: 다른 화면 추가
-    SignUpScreen(), // TODO: 다른 화면 추가
+    MyProfileScreen(), // TODO: 다른 화면 추가
   ];
 
   void _onItemTapped(int index) {
