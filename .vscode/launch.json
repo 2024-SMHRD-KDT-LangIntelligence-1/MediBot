@@ -2,6 +2,27 @@
     "configurations": [
         {
             "type": "java",
+            "name": "SpringMedibotApplication",
+            "request": "launch",
+            "mainClass": "com.fiveit.spring_medibot.SpringMedibotApplication",
+            "projectName": ""
+        },
+        {
+            "type": "java",
+            "name": "MediApplication",
+            "request": "launch",
+            "mainClass": "com.fiveit.medi.MediApplication",
+            "projectName": ""
+        },
+        {
+            "type": "java",
+            "name": "MedibotApplication",
+            "request": "launch",
+            "mainClass": "com.fiveit.medibot.MedibotApplication",
+            "projectName": ""
+        },
+        {
+            "type": "java",
             "name": "Spring Boot-MedibotApplication<medibot>",
             "request": "launch",
             "cwd": "${workspaceFolder}",

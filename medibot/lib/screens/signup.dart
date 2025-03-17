@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import '/services/StorageManager.dart';
+import 'package:medibot/services/api_service.dart';
 
 const Color kBackgroundColor = Colors.white;
 const Color kTextFieldFillColor = Color(0xFFF2F2F7);
@@ -39,21 +40,80 @@ class _SignUpScreenState extends State<SignUpScreen> {
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _confirmPasswordController =
       TextEditingController();
-  final TextEditingController _birthController = TextEditingController();
+  final TextEditingController _ageController =
+      TextEditingController(); // ✅ 나이 입력 필드 추가
+
   bool _isIdChecked = false;
   String? _passwordError;
+  String _gender = "M"; // 기본 성별
+  String _wakeUpTime = "07:00:00"; // 기본 기상 시간
+  String _sleepTime = "23:00:00"; // 기본 취침 시간
 
-  void _checkIdDuplicate() {
-    setState(() => _isIdChecked = true);
+  /// ✅ 이메일 중복 확인
+  void _checkIdDuplicate() async {
+    try {
+      bool isDuplicate = await ApiService.checkEmailDuplicate(
+        _idController.text,
+      );
+      setState(() {
+        _isIdChecked = !isDuplicate;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(isDuplicate ? "이미 사용 중인 이메일입니다." : "사용 가능한 이메일입니다!"),
+        ),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text("이메일 중복 확인 실패: $e")));
+    }
   }
 
-  void _validatePassword(String value) {
-    setState(() {
-      _passwordError =
-          _passwordController.text != _confirmPasswordController.text
-              ? "비밀번호가 일치하지 않습니다"
-              : null;
-    });
+  /// ✅ 회원가입 요청
+  void _signUp() async {
+    if (_passwordController.text != _confirmPasswordController.text) {
+      setState(() {
+        _passwordError = "비밀번호가 일치하지 않습니다.";
+      });
+      return;
+    }
+
+    if (_ageController.text.isEmpty ||
+        int.tryParse(_ageController.text) == null) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text("나이를 올바르게 입력하세요.")));
+      return;
+    }
+
+    try {
+      String result = await ApiService.signUp(
+        userId: _idController.text,
+        username: _nameController.text,
+        password: _passwordController.text,
+        age: int.parse(_ageController.text), // ✅ birthdate 대신 age 전달
+        gender: _gender,
+        wakeUpTime: _wakeUpTime,
+        sleepTime: _sleepTime,
+      );
+
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(result)));
+
+      if (result == "회원가입 성공!") {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => IntroScreen()),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text("회원가입 실패: $e")));
+    }
   }
 
   @override
@@ -63,9 +123,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
         backgroundColor: Colors.white,
         iconTheme: IconThemeData(color: Colors.black),
         leading: IconButton(
-          icon: Icon(Icons.arrow_back), // ✅ 뒤로 가기 버튼 추가
+          icon: Icon(Icons.arrow_back),
           onPressed: () {
-            Navigator.pop(context); // ✅ 뒤로 가기 기능 추가
+            Navigator.pop(context);
           },
         ),
       ),
@@ -98,22 +158,18 @@ class _SignUpScreenState extends State<SignUpScreen> {
                 SizedBox(width: 10),
                 ElevatedButton(
                   onPressed: _checkIdDuplicate,
-                  style: _buttonStyle(),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: kPrimaryColor,
+                  ),
                   child: Text("중복확인"),
                 ),
               ],
             ),
-            _buildTextField(
-              _passwordController,
-              "비밀번호",
-              isPassword: true,
-              onChanged: _validatePassword,
-            ),
+            _buildTextField(_passwordController, "비밀번호", isPassword: true),
             _buildTextField(
               _confirmPasswordController,
               "비밀번호 확인",
               isPassword: true,
-              onChanged: _validatePassword,
             ),
             if (_passwordError != null)
               Padding(
@@ -124,32 +180,18 @@ class _SignUpScreenState extends State<SignUpScreen> {
                 ),
               ),
             _buildTextField(
-              _birthController,
-              "생년월일 (YYYY-MM-DD)",
-              keyboardType: TextInputType.datetime,
+              _ageController,
+              "나이 입력",
+              keyboardType: TextInputType.number, // ✅ 숫자 키패드
             ),
             SizedBox(height: 40),
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
-                onPressed: () {
-                  if (_passwordError == null) {
-                    StorageManager().saveUserInfo(
-                      _nameController.text,
-                      _idController.text,
-                      _passwordController.text,
-                      _birthController.text,
-                    );
-
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => IntroScreen()),
-                    );
-                  }
-                },
-                style: _buttonStyle(),
+                onPressed: _signUp,
+                style: ElevatedButton.styleFrom(backgroundColor: kPrimaryColor),
                 child: Text(
-                  "다음",
+                  "회원가입",
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
               ),
@@ -166,7 +208,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
     String hintText, {
     bool isPassword = false,
     TextInputType keyboardType = TextInputType.text,
-    void Function(String)? onChanged,
   }) {
     return Padding(
       padding: EdgeInsets.symmetric(vertical: 10),
@@ -174,7 +215,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
         controller: controller,
         obscureText: isPassword,
         keyboardType: keyboardType,
-        onChanged: onChanged,
         decoration: _inputDecoration(hintText),
         style: TextStyle(fontSize: 16, color: kTextColor),
       ),
