@@ -1,0 +1,14 @@
+{
+    "configurations": [
+        {
+            "type": "java",
+            "name": "Spring Boot-MedibotApplication<medibot>",
+            "request": "launch",
+            "cwd": "${workspaceFolder}",
+            "mainClass": "com.fiveit.medibot.MedibotApplication",
+            "projectName": "medibot",
+            "args": "",
+            "envFile": "${workspaceFolder}/.env"
+        }
+    ]
+}
