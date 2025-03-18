@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import '/services/StorageManager.dart';
 import 'package:medibot/services/api_service.dart';
+import 'LoginScreen.dart';
 
 const Color kBackgroundColor = Colors.white;
 const Color kTextFieldFillColor = Color(0xFFF2F2F7);
@@ -42,79 +43,91 @@ class _SignUpScreenState extends State<SignUpScreen> {
       TextEditingController();
   final TextEditingController _ageController =
       TextEditingController(); // ✅ 나이 입력 필드 추가
+  void _selectBirthDate(BuildContext context) {
+    showCupertinoModalPopup(
+      context: context,
+      builder:
+          (_) => Container(
+            height: 250,
+            color: Colors.white,
+            child: Column(
+              children: [
+                // 확인 버튼
+                Container(
+                  padding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(context),
+                        child: Text(
+                          "취소",
+                          style: TextStyle(
+                            color: Colors.redAccent,
+                            fontSize: 18,
+                          ),
+                        ),
+                      ),
+                      TextButton(
+                        onPressed: () => Navigator.pop(context),
+                        child: Text(
+                          "확인",
+                          style: TextStyle(
+                            color: Colors.blueAccent,
+                            fontSize: 18,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Expanded(
+                  child: CupertinoDatePicker(
+                    mode: CupertinoDatePickerMode.date, // ✅ 날짜 선택 모드
+                    initialDateTime: DateTime(2000, 1, 1), // 기본값
+                    minimumDate: DateTime(1900, 1, 1), // 최소 선택 가능 날짜
+                    maximumDate: DateTime.now(), // 오늘까지 가능
+                    onDateTimeChanged: (DateTime newDate) {
+                      setState(() {
+                        _selectedBirthDate = newDate;
+                      });
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
+    );
+  }
 
   bool _isIdChecked = false;
   String? _passwordError;
   String _gender = "M"; // 기본 성별
   String _wakeUpTime = "07:00:00"; // 기본 기상 시간
   String _sleepTime = "23:00:00"; // 기본 취침 시간
+  DateTime? _selectedBirthDate; // ✅ 생년월일 저장 변수
 
-  /// ✅ 이메일 중복 확인
-  void _checkIdDuplicate() async {
-    try {
-      bool isDuplicate = await ApiService.checkEmailDuplicate(
-        _idController.text,
-      );
-      setState(() {
-        _isIdChecked = !isDuplicate;
-      });
+  // /// ✅ 이메일 중복 확인
+  // void _checkIdDuplicate() async {
+  //   try {
+  //     bool isDuplicate = await ApiService.checkEmailDuplicate(
+  //       _idController.text,
+  //     );
+  //     setState(() {
+  //       _isIdChecked = !isDuplicate;
+  //     });
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(isDuplicate ? "이미 사용 중인 이메일입니다." : "사용 가능한 이메일입니다!"),
-        ),
-      );
-    } catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text("이메일 중복 확인 실패: $e")));
-    }
-  }
-
-  /// ✅ 회원가입 요청
-  void _signUp() async {
-    if (_passwordController.text != _confirmPasswordController.text) {
-      setState(() {
-        _passwordError = "비밀번호가 일치하지 않습니다.";
-      });
-      return;
-    }
-
-    if (_ageController.text.isEmpty ||
-        int.tryParse(_ageController.text) == null) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text("나이를 올바르게 입력하세요.")));
-      return;
-    }
-
-    try {
-      String result = await ApiService.signUp(
-        userId: _idController.text,
-        username: _nameController.text,
-        password: _passwordController.text,
-        age: int.parse(_ageController.text), // ✅ birthdate 대신 age 전달
-        gender: _gender,
-        wakeUpTime: _wakeUpTime,
-        sleepTime: _sleepTime,
-      );
-
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(result)));
-
-      if (result == "회원가입 성공!") {
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => IntroScreen()),
-        );
-      }
-    } catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text("회원가입 실패: $e")));
-    }
-  }
+  //     ScaffoldMessenger.of(context).showSnackBar(
+  //       SnackBar(
+  //         content: Text(isDuplicate ? "이미 사용 중인 이메일입니다." : "사용 가능한 이메일입니다!"),
+  //       ),
+  //     );
+  //   } catch (e) {
+  //     ScaffoldMessenger.of(
+  //       context,
+  //     ).showSnackBar(SnackBar(content: Text("이메일 중복 확인 실패: $e")));
+  //   }
+  // }
 
   @override
   Widget build(BuildContext context) {
@@ -157,7 +170,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
                 ),
                 SizedBox(width: 10),
                 ElevatedButton(
-                  onPressed: _checkIdDuplicate,
+                  onPressed: () {
+                    // _checkIdDuplicate();
+                  },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: kPrimaryColor,
                   ),
@@ -179,19 +194,50 @@ class _SignUpScreenState extends State<SignUpScreen> {
                   style: TextStyle(color: Colors.red, fontSize: 14),
                 ),
               ),
-            _buildTextField(
-              _ageController,
-              "나이 입력",
-              keyboardType: TextInputType.number, // ✅ 숫자 키패드
+            GestureDetector(
+              onTap: () => _selectBirthDate(context),
+              child: Container(
+                padding: EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                decoration: BoxDecoration(
+                  color: Colors.grey[200],
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      _selectedBirthDate != null
+                          ? "${_selectedBirthDate!.year}-${_selectedBirthDate!.month.toString().padLeft(2, '0')}-${_selectedBirthDate!.day.toString().padLeft(2, '0')}"
+                          : "생년월일 선택", // 기본값
+                      style: TextStyle(fontSize: 16, color: Colors.black),
+                    ),
+                    Icon(Icons.calendar_today, color: Colors.grey),
+                  ],
+                ),
+              ),
             ),
+
             SizedBox(height: 40),
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
-                onPressed: _signUp,
+                onPressed: () {
+                  // ✅ 회원 정보를 저장한 후 IntroScreen으로 이동
+                  StorageManager().saveUserInfo(
+                    _nameController.text,
+                    _idController.text,
+                    _passwordController.text,
+                    "${_selectedBirthDate!.year}-${_selectedBirthDate!.month.toString().padLeft(2, '0')}-${_selectedBirthDate!.day.toString().padLeft(2, '0')}",
+                  );
+
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => IntroScreen()),
+                  );
+                },
                 style: ElevatedButton.styleFrom(backgroundColor: kPrimaryColor),
                 child: Text(
-                  "회원가입",
+                  "다음", // ✅ "회원가입" → "다음"으로 변경
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
               ),
@@ -234,7 +280,7 @@ class IntroScreen extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Text(
-              "약 시간과 병원검사 항목을 설정합니다",
+              "현재 드시고 계신 약에 대한 조사입니다.",
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 20,
@@ -889,6 +935,85 @@ class _MedicationSelectionScreenState extends State<MedicationSelectionScreen> {
     });
   }
 
+  void _finalSignUp() async {
+    if (selectedMedications.isEmpty) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text("최소 하나 이상의 약을 선택해주세요.")));
+      return;
+    }
+
+    // ✅ 복약 시간별 약 저장
+    String timeKey =
+        "${widget.times[widget.currentIndex]['hour']}:${widget.times[widget.currentIndex]['minute']}";
+    StorageManager().saveSelectedMedications(timeKey, selectedMedications);
+
+    // ✅ 모든 정보 불러오기
+    Map<String, dynamic> userData = StorageManager().getAllData();
+    print("🟢 회원가입 요청 데이터: $userData"); // 🚀 회원가입 전 데이터 확인
+
+    try {
+      // ✅ 1. 회원가입 수행 → userId 반환
+      int userId = await ApiService.signUp(
+        userId: userData["user"]["email"], // ✅ 이제 그냥 ID로 사용 (이메일 아님)
+        username: userData["user"]["name"],
+        password: userData["user"]["password"],
+        birthdate: userData["user"]["birthdate"], // ✅ YYYY-MM-DD 형식 전달
+        gender: userData["gender"] ?? "M",
+        wakeUpTime: formatTime(userData["sleepSchedule"]["wakeUp"]),
+        sleepTime: formatTime(userData["sleepSchedule"]["bedTime"]),
+      );
+
+      print("✅ 회원가입 성공 - userId: $userId");
+
+      // ✅ 2. 복약 일정 저장 (medicationTimes가 비어 있지 않은 경우만 실행)
+      if (userData["medicationTimes"].isNotEmpty) {
+        for (var schedule in userData["medicationTimes"]) {
+          print("🟢 복약 일정 추가 요청: $schedule"); // 🚀 요청 확인
+
+          // ✅ 복약 일정 저장 (백엔드 DTO에 맞춰 수정)
+          MedicationSchedule scheduleData = await ApiService.createSchedule(
+            userId: userId.toString(),
+            mediIdx: schedule["mediIdx"], // ✅ 약 ID 추가
+            tmDate:
+                DateTime.now().toString().split(' ')[0], // 오늘 날짜 (YYYY-MM-DD)
+            tmTime:
+                "${schedule["hour"].toString().padLeft(2, '0')}:${schedule["minute"].toString().padLeft(2, '0')}", // HH:mm
+          );
+
+          print("✅ 복약 일정 저장 완료 - 일정 ID: ${scheduleData.tmIdx}");
+
+          // ✅ 3. 해당 일정에 복용할 약 저장
+          if (userData["medications"].containsKey(
+            "${schedule["hour"]}:${schedule["minute"]}",
+          )) {
+            for (var medication
+                in userData["medications"]["${schedule["hour"]}:${schedule["minute"]}"]) {
+              print("🟢 복약 추가 요청: $medication");
+
+              await ApiService.addMedication(
+                userId: userId.toString(), // ✅ user_id 추가
+                mediType: medication, // ✅ 약 이름 (medi_type)으로 변경
+              );
+            }
+          }
+        }
+      }
+      print("✅ 회원가입 및 복약 일정 저장 완료!");
+
+      // ✅ 4. 로그인 화면으로 이동 (LoginScreen으로 직접 이동)
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => LoginScreen()),
+      );
+    } catch (e) {
+      print("🚨 오류 발생: $e");
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text("회원가입 실패: $e")));
+    }
+  }
+
   void _addNewMedication() {
     TextEditingController medicationController = TextEditingController();
     showDialog(
@@ -1104,8 +1229,15 @@ class _MedicationSelectionScreenState extends State<MedicationSelectionScreen> {
                           onPressed:
                               selectedMedications.isNotEmpty
                                   ? () {
+                                    // ✅ 현재 선택한 약 정보 저장
+                                    StorageManager().saveSelectedMedications(
+                                      "${widget.times[widget.currentIndex]['hour']}:${widget.times[widget.currentIndex]['minute']}",
+                                      selectedMedications,
+                                    );
+
                                     if (widget.currentIndex <
                                         widget.times.length - 1) {
+                                      // ✅ 아직 선택해야 할 약 복용 시간이 남아 있으면 다음 화면으로 이동
                                       Navigator.push(
                                         context,
                                         MaterialPageRoute(
@@ -1119,10 +1251,11 @@ class _MedicationSelectionScreenState extends State<MedicationSelectionScreen> {
                                         ),
                                       );
                                     } else {
-                                      Navigator.pushNamed(context, "/nextStep");
+                                      // ✅ 마지막 복용 약 선택이 끝나면 회원가입 완료 & 로그인 화면 이동
+                                      _finalSignUp();
                                     }
                                   }
-                                  : null,
+                                  : null, // ✅ 약이 선택되지 않으면 버튼 비활성화
                           style: ElevatedButton.styleFrom(
                             backgroundColor:
                                 selectedMedications.isNotEmpty
@@ -1135,7 +1268,9 @@ class _MedicationSelectionScreenState extends State<MedicationSelectionScreen> {
                             ),
                           ),
                           child: Text(
-                            "다음",
+                            widget.currentIndex < widget.times.length - 1
+                                ? "다음"
+                                : "회원가입 완료", // ✅ 마지막 버튼일 때 "회원가입 완료"로 변경
                             style: TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
@@ -1153,4 +1288,12 @@ class _MedicationSelectionScreenState extends State<MedicationSelectionScreen> {
       ),
     );
   }
+}
+
+String formatTime(String time) {
+  // "7:0" 같은 형식을 "07:00"으로 변환
+  List<String> parts = time.split(':');
+  String hour = parts[0].padLeft(2, '0');
+  String minute = parts.length > 1 ? parts[1].padLeft(2, '0') : "00";
+  return "$hour:$minute";
 }

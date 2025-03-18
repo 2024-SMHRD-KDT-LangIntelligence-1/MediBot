@@ -18,12 +18,17 @@ class StorageManager {
   };
 
   // ✅ 회원가입 정보 저장
-  void saveUserInfo(String name, String email, String password, String birth) {
+  void saveUserInfo(
+    String name,
+    String email,
+    String password,
+    String birthdate,
+  ) {
     _storage["user"] = {
       "name": name,
       "email": email,
       "password": password,
-      "birth": birth,
+      "birthdate": birthdate,
     };
     print("📌 [저장 완료] 회원가입 정보: $_storage");
   }

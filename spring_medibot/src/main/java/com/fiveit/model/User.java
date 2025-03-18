@@ -6,50 +6,39 @@ import lombok.*;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.LocalDateTime;
+import java.util.Date;
 
 @Entity
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@Table(name = "users")
+@Table(name = "tb_user")
 public class User {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    @Column(name = "user_id", nullable = false, unique = true)
+    private String userId;
 
-    @Column(nullable = false, unique = true, length = 50)
-    private String userId; // 아이디 (이메일)
+    @Column(name = "user_pw", nullable = false)
+    private String userPw;
 
-    @Column(nullable = false, length = 50)
-    private String username; // 이름
+    @Column(name = "user_name", nullable = false)
+    private String userName;
 
-    @Column(nullable = false, length = 255)
-    private String password; // 비밀번호
-
-    @Column(nullable = false)
-    private LocalDate birthdate; // 생년월일 (YYYY-MM-DD)
-
-    @Column
-    private Integer age; // 나이
+    @Column(name = "user_birthdate", nullable = false)
+    private LocalDate birthdate;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private Gender gender; // 성별 (ENUM)
+    @Column(name = "user_gender", nullable = false)
+    private Gender gender;
 
-    @Column
-    private LocalTime wakeUpTime; // 기상 시간
+    @Column(name = "wakeup_tm")
+    private String wakeupTm;
 
-    @Column
-    private LocalTime sleepTime; // 취침 시간
+    @Column(name = "gotobed_tm")
+    private String gotobedTm;
 
-    @Column(nullable = false, updatable = false)
-    private LocalDateTime createdAt; // 가입일 (CURRENT_TIMESTAMP)
-
-    @PrePersist
-    protected void onCreate() {
-        this.createdAt = LocalDateTime.now();
-    }
-
+    @Column(name = "joined_at", updatable = false)
+    private Date joinedAt;
 }

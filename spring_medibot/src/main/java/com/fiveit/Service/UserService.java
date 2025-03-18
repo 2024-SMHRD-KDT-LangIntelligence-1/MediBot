@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.Date;
 
 @Service
 public class UserService {
@@ -32,14 +33,17 @@ public class UserService {
         // 사용자 저장 (비밀번호 암호화 제거)
         User user = User.builder()
                 .userId(request.getUserId())
-                .username(request.getUsername())
-                .password(request.getPassword()) // 🔥 평문 저장 (보안 취약)
+                .userName(request.getUsername())
+                .userPw(request.getPassword()) // 🔥 평문 저장 (보안 취약)
                 .birthdate(birthDate)
-                .age(request.getAge())
+                // .age(request.getAge())
                 .gender(gender)
-                .wakeUpTime(wakeUpTime)
-                .sleepTime(sleepTime)
+                .wakeupTm(request.getWakeUpTime()) // ✅ 필드명 변경 (wakeUpTime → wakeupTm)
+                .gotobedTm(request.getSleepTime())
+                // ✅ 필드명 변경 (sleepTime → gotobedTm)
                 .build();
+
+        user.setJoinedAt(new Date()); // 가입 날짜를 현재 시간으로 설정
 
         return userRepository.save(user);
     }

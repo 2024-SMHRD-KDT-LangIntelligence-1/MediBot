@@ -4,6 +4,13 @@
             "type": "java",
             "name": "SpringMedibotApplication",
             "request": "launch",
+            "mainClass": "com.SpringMedibotApplication",
+            "projectName": "spring_medibot"
+        },
+        {
+            "type": "java",
+            "name": "SpringMedibotApplication",
+            "request": "launch",
             "mainClass": "com.fiveit.spring_medibot.SpringMedibotApplication",
             "projectName": ""
         },
