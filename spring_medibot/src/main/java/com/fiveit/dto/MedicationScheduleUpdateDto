@@ -1,0 +1,12 @@
+package com.fiveit.medibot.dto;
+
+import lombok.Data;
+import java.time.LocalDate;
+import java.time.LocalTime;
+
+@Data
+public class MedicationScheduleUpdateDto {
+    private LocalDate date;
+    private LocalTime time;
+    private String taken;  // 복약 여부 (Y 또는 N)
+}
