@@ -1,41 +1,47 @@
-// package com.fiveit.controller;
+package com.fiveit.controller;
 
-// import com.fiveit.dto.MedicationScheduleDto;
-// import com.fiveit.model.MedicationSchedule;
-// import com.fiveit.Service.MedicationScheduleService;
-// import org.springframework.http.ResponseEntity;
-// import org.springframework.web.bind.annotation.*;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
 
-// import java.time.LocalDate;
-// import java.util.List;
+import com.fiveit.Service.MedicationScheduleService;
+import com.fiveit.dto.MedicationScheduleRequestDTO;
+import com.fiveit.model.MedicationSchedule;
 
-// @RestController
-// @RequestMapping("/api/schedules")
-// public class MedicationScheduleController {
+import java.util.List;
+import java.util.Optional;
 
-// private final MedicationScheduleService scheduleService;
+@RestController
+@RequestMapping("/api/medication-schedules")
+public class MedicationScheduleController {
 
-// public MedicationScheduleController(MedicationScheduleService
-// scheduleService) {
-// this.scheduleService = scheduleService;
-// }
+    private final MedicationScheduleService medicationScheduleService;
 
-// // 1. 복약 일정 등록 API
-// @PostMapping
-// public ResponseEntity<MedicationSchedule> createSchedule(@RequestBody
-// MedicationScheduleDto dto) {
-// MedicationSchedule schedule = scheduleService.createSchedule(dto);
-// return ResponseEntity.ok(schedule);
-// }
+    public MedicationScheduleController(MedicationScheduleService medicationScheduleService) {
+        this.medicationScheduleService = medicationScheduleService;
+    }
 
-// // 2. 특정 날짜의 복약 일정 조회 API
-// @GetMapping("/{userId}/{date}")
-// public ResponseEntity<List<MedicationSchedule>> getSchedules(@PathVariable
-// String userId,
-// @PathVariable String date) {
-// LocalDate localDate = LocalDate.parse(date);
-// List<MedicationSchedule> schedules =
-// scheduleService.getSchedulesByUserAndDate(userId, localDate);
-// return ResponseEntity.ok(schedules);
-// }
-// }
+    // ✅ 복용 스케줄 저장 (POST)
+    @PostMapping
+    public ResponseEntity<MedicationSchedule> saveSchedule(@RequestBody MedicationScheduleRequestDTO dto) {
+        MedicationSchedule savedSchedule = medicationScheduleService.saveSchedule(dto);
+        System.out.println("📩 받은 요청 데이터: " + savedSchedule); // 🔥 요청된 데이터 로그 출력
+
+        return ResponseEntity.ok(savedSchedule);
+    }
+
+    // ✅ 특정 유저의 스케줄 조회 (GET)
+    @GetMapping("/user/{userId}")
+    public ResponseEntity<List<MedicationSchedule>> getSchedulesByUser(@PathVariable String userId) {
+        List<MedicationSchedule> schedules = medicationScheduleService.getSchedulesByUser(userId);
+        return ResponseEntity.ok(schedules);
+    }
+
+    // ✅ 특정 스케줄 조회 (GET)
+    // @GetMapping("/{tmIdx}")
+    // public ResponseEntity<Optional<MedicationSchedule>>
+    // getScheduleById(@PathVariable Long tmIdx) {
+    // Optional<MedicationSchedule> schedule =
+    // medicationScheduleService.getScheduleById(tmIdx);
+    // return ResponseEntity.ok(schedule);
+    // }
+}

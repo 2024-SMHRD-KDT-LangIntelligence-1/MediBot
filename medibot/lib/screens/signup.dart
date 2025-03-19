@@ -954,7 +954,7 @@ class _MedicationSelectionScreenState extends State<MedicationSelectionScreen> {
 
     try {
       // ✅ 1. 회원가입 수행 → userId 반환
-      int userId = await ApiService.signUp(
+      String userId = await ApiService.signUp(
         userId: userData["user"]["email"], // ✅ 이제 그냥 ID로 사용 (이메일 아님)
         username: userData["user"]["name"],
         password: userData["user"]["password"],
@@ -967,35 +967,28 @@ class _MedicationSelectionScreenState extends State<MedicationSelectionScreen> {
       print("✅ 회원가입 성공 - userId: $userId");
 
       // ✅ 2. 복약 일정 저장 (medicationTimes가 비어 있지 않은 경우만 실행)
-      if (userData["medicationTimes"].isNotEmpty) {
-        for (var schedule in userData["medicationTimes"]) {
-          print("🟢 복약 일정 추가 요청: $schedule"); // 🚀 요청 확인
+      if (userData.isNotEmpty) {
+        for (var entry in userData["medications"].entries) {
+          String time = entry.key; // "9:0"처럼 저장된 값
 
-          // ✅ 복약 일정 저장 (백엔드 DTO에 맞춰 수정)
-          MedicationSchedule scheduleData = await ApiService.createSchedule(
-            userId: userId.toString(),
-            mediIdx: schedule["mediIdx"], // ✅ 약 ID 추가
-            tmDate:
-                DateTime.now().toString().split(' ')[0], // 오늘 날짜 (YYYY-MM-DD)
-            tmTime:
-                "${schedule["hour"].toString().padLeft(2, '0')}:${schedule["minute"].toString().padLeft(2, '0')}", // HH:mm
-          );
+          // ✅ HH:mm 형식으로 보정
+          List<String> timeParts = time.split(":");
+          String formattedTime =
+              "${timeParts[0].padLeft(2, '0')}:${timeParts[1].padLeft(2, '0')}";
 
-          print("✅ 복약 일정 저장 완료 - 일정 ID: ${scheduleData.tmIdx}");
+          List<String> medications = entry.value;
 
-          // ✅ 3. 해당 일정에 복용할 약 저장
-          if (userData["medications"].containsKey(
-            "${schedule["hour"]}:${schedule["minute"]}",
-          )) {
-            for (var medication
-                in userData["medications"]["${schedule["hour"]}:${schedule["minute"]}"]) {
-              print("🟢 복약 추가 요청: $medication");
+          print("🟢 [요청 확인] ${formattedTime} 시간에 복약 일정 추가 요청: $medications");
 
-              await ApiService.addMedication(
-                userId: userId.toString(), // ✅ user_id 추가
-                mediType: medication, // ✅ 약 이름 (medi_type)으로 변경
-              );
-            }
+          for (var mediName in medications) {
+            MedicationSchedule scheduleData = await ApiService.createSchedule(
+              userId: userData["user"]["email"], // ✅ 이제 그냥 ID로 사용 (이메일 아님)
+              mediName: mediName,
+              tmDate: DateTime.now().toString().split(' ')[0], // YYYY-MM-DD
+              tmTime: formattedTime, // ✅ 올바른 HH:mm 형식 전달
+            );
+
+            print("✅ 복약 일정 저장 완료 - 일정 ID: ${scheduleData.tmIdx}");
           }
         }
       }

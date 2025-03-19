@@ -19,10 +19,6 @@ public class MedicationSchedule {
     @Column(name = "tm_idx")
     private Long tmIdx;
 
-    @ManyToOne
-    @JoinColumn(name = "medi_idx", nullable = false)
-    private Medication medication; // ✅ 약 정보 참조
-
     @Column(name = "tm_date", nullable = false)
     private LocalDate tmDate;
 

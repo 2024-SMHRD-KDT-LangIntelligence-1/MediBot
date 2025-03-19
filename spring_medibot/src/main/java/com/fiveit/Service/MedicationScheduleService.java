@@ -1,73 +1,54 @@
-// package com.fiveit.Service;
+package com.fiveit.Service;
 
-// import com.fiveit.dto.MedicationScheduleDto;
-// import com.fiveit.model.MedicationSchedule;
-// import com.fiveit.repository.MedicationScheduleRepository;
+import com.fiveit.dto.MedicationScheduleRequestDTO;
+import com.fiveit.model.MedicationSchedule;
+import com.fiveit.repository.MedicationScheduleRepository;
 
-// import org.apache.el.stream.Optional;
-// import org.springframework.stereotype.Service;
+import jakarta.transaction.Transactional;
 
-// import java.time.LocalDate;
-// import java.time.LocalTime;
-// import java.util.List;
+import org.apache.el.stream.Optional;
+import org.springframework.stereotype.Service;
 
-// @Service
-// public class MedicationScheduleService {
+import java.time.LocalDate;
+import java.time.LocalTime;
+import java.util.List;
 
-// private final MedicationScheduleRepository scheduleRepository;
+@Service
+public class MedicationScheduleService {
 
-// public MedicationScheduleService(MedicationScheduleRepository
-// scheduleRepository) {
-// this.scheduleRepository = scheduleRepository;
-// }
+    private final MedicationScheduleRepository medicationScheduleRepository;
 
-// // 복약 일정 등록
-// public MedicationSchedule createSchedule(MedicationScheduleDto dto) {
-// MedicationSchedule schedule = MedicationSchedule.builder()
-// .userId(dto.getUserId())
-// .mediIdx(dto.getMediIdx())
-// .tmDate(dto.getDate())
-// .tmTime(dto.getTime())
-// .tmDone(dto.getTaken()) // 기본값 'N' (미복용)
-// .build();
-// return scheduleRepository.save(schedule);
-// }
+    public MedicationScheduleService(MedicationScheduleRepository medicationScheduleRepository) {
+        this.medicationScheduleRepository = medicationScheduleRepository;
+    }
 
-// // 특정 날짜의 복약 일정 조회
-// public List<MedicationSchedule> getSchedulesByUserAndDate(String userId,
-// LocalDate date) {
-// return scheduleRepository.findByUserIdAndTmDate(userId, date);
-// }
+    // ✅ 약 복용 스케줄 저장
+    @Transactional
+    public MedicationSchedule saveSchedule(MedicationScheduleRequestDTO dto) {
+        MedicationSchedule schedule = new MedicationSchedule();
 
-// // 복약 일정 수정 (날짜, 시간, 복약 여부 업데이트)
-// // public MedicationSchedule updateSchedule(Long tmIdx,
-// // MedicationScheduleUpdateDto dto) {
-// // Optional<MedicationSchedule> optionalSchedule =
-// // scheduleRepository.findById(tmIdx);
-// // if (optionalSchedule.isEmpty()) {
-// // throw new IllegalArgumentException("해당 복약 일정이 존재하지 않습니다.");
-// // }
+        // ✅ 문자열 날짜/시간을 LocalDate 및 LocalTime으로 변환 (만약 엔티티가 LocalDate 사용한다면)
+        schedule.setTmDate(LocalDate.parse(dto.getTmDate())); // YYYY-MM-DD
+        schedule.setTmTime(LocalTime.parse(dto.getTmTime())); // HH:mm
 
-// // MedicationSchedule schedule = optionalSchedule.get();
-// // schedule.setTmDate(dto.getDate());
-// // schedule.setTmTime(dto.getTime());
-// // schedule.setTmDone(dto.getTaken());
+        // ✅ "Y" / "N" 값을 boolean으로 변환
+        schedule.setTmDone(dto.getTmDone().equalsIgnoreCase("Y"));
 
-// // // 복약 여부가 'Y'인 경우, 실제 복용 시간을 기록
-// // if ("Y".equals(dto.getTaken())) {
-// // schedule.setRealTmAt(LocalTime.now());
-// // } else {
-// // schedule.setRealTmAt(null);
-// // }
+        // ✅ realTmAt가 null이 아닐 때만 변환
+        schedule.setRealTmAt(dto.getRealTmAt());
 
-// // return scheduleRepository.save(schedule);
-// // }
+        // ✅ userId & 약 이름 그대로 매핑
+        schedule.setUserId(dto.getUserId());
+        schedule.setMediName(dto.getMediName());
 
-// // 복약 일정 삭제
-// public void deleteSchedule(Long tmIdx) {
-// if (!scheduleRepository.existsById(tmIdx)) {
-// throw new IllegalArgumentException("삭제할 복약 일정이 존재하지 않습니다.");
-// }
-// scheduleRepository.deleteById(tmIdx);
-// }
-// }
+        return medicationScheduleRepository.save(schedule);
+    }
+
+    // ✅ 특정 유저의 스케줄 조회
+    public List<MedicationSchedule> getSchedulesByUser(String userId) {
+        return medicationScheduleRepository.findAll().stream()
+                .filter(schedule -> schedule.getUserId().equals(userId))
+                .toList();
+    }
+
+}

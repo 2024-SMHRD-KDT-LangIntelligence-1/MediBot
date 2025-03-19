@@ -8,4 +8,7 @@ import java.util.List;
 
 public interface MedicationScheduleRepository extends JpaRepository<MedicationSchedule, Long> {
     List<MedicationSchedule> findByUserIdAndTmDate(String userId, LocalDate date);
+
+    List<MedicationSchedule> findByUserId(String userId);
+
 }
