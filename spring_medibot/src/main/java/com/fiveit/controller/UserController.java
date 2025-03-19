@@ -1,5 +1,6 @@
 package com.fiveit.controller;
 
+import com.fiveit.dto.LoginRequest;
 import com.fiveit.dto.SignUpRequest;
 import com.fiveit.model.User;
 import com.fiveit.Service.UserService;
@@ -31,5 +32,16 @@ public class UserController {
     public ResponseEntity<Boolean> checkEmail(@RequestParam String userId) {
         boolean exists = userService.checkEmailExists(userId);
         return ResponseEntity.ok(exists);
+    }
+
+    @PostMapping("/login")
+    public ResponseEntity<?> login(@RequestBody LoginRequest request) {
+        User user = userService.authenticateUser(request.getUserId(), request.getPassword());
+
+        if (user != null) {
+            return ResponseEntity.ok("로그인 성공: " + user.getUserId());
+        } else {
+            return ResponseEntity.badRequest().body("로그인 실패: 아이디 또는 비밀번호가 잘못되었습니다.");
+        }
     }
 }

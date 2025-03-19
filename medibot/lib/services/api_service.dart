@@ -97,6 +97,27 @@ class ApiService {
       throw Exception("🚨 일정 조회 실패: ${response.body}");
     }
   }
+
+  /// **로그인 API**
+  static Future<String> login({
+    required String userId,
+    required String password,
+  }) async {
+    final response = await http.post(
+      Uri.parse("$baseUrl/api/auth/login"),
+      headers: {"Content-Type": "application/json"},
+      body: jsonEncode({"userId": userId, "password": password}),
+    );
+
+    print("📡 [디버깅] 로그인 응답 코드: ${response.statusCode}");
+    print("📡 [디버깅] 로그인 응답 본문: ${response.body}");
+
+    if (response.statusCode == 200) {
+      return response.body; // ✅ 성공 시 userId 반환
+    } else {
+      throw Exception("로그인 실패: ${response.body}");
+    }
+  }
 }
 
 class MedicationSchedule {

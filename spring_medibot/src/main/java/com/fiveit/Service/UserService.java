@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.Date;
+import java.util.Optional;
 
 @Service
 public class UserService {
@@ -46,6 +47,20 @@ public class UserService {
         user.setJoinedAt(new Date()); // 가입 날짜를 현재 시간으로 설정
 
         return userRepository.save(user);
+    }
+
+    public User authenticateUser(String userId, String password) {
+        Optional<User> userOpt = userRepository.findById(userId);
+
+        if (userOpt.isPresent()) {
+            User user = userOpt.get();
+
+            // ✅ 저장된 비밀번호와 입력된 비밀번호 단순 비교
+            if (user.getUserPw().equals(password)) {
+                return user; // ✅ 인증 성공
+            }
+        }
+        return null; // ❌ 인증 실패 시 null 반환
     }
 
     public boolean checkEmailExists(String userId) {

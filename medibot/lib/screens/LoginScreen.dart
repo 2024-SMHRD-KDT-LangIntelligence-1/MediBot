@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:medibot/services/api_service.dart';
+import 'package:medibot/widgets/bottom_bar.dart';
 import 'signup.dart'; // 회원가입 페이지 추가
 import 'package:medibot/screens/signup.dart';
 
@@ -28,11 +30,30 @@ class _LoginScreenState extends State<LoginScreen> {
     });
   }
 
-  void _login() {
-    // 로그인 로직 (API 연동)
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text("로그인 성공!")));
+  void _login() async {
+    String userId = _emailController.text.trim();
+    String password = _passwordController.text.trim();
+
+    try {
+      String loggedInUserId = await ApiService.login(
+        userId: userId,
+        password: password,
+      );
+
+      print("✅ 로그인 성공 - 사용자 ID: $loggedInUserId");
+
+      // ✅ 로그인 성공 시 화면 초기화 후 홈 화면으로 이동
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (context) => BottomNavBar()), // 홈 화면으로 이동
+        (Route<dynamic> route) => false, // 이전 화면 제거
+      );
+    } catch (e) {
+      print("🚨 로그인 실패: $e");
+
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text("로그인 실패: 아이디 또는 비밀번호가 잘못되었습니다.")));
+    }
   }
 
   @override
