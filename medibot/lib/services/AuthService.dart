@@ -7,23 +7,6 @@ class AuthService {
   static const String _baseUrl =
       "http://your-spring-boot-server.com"; // 🔥 스프링 부트 서버 주소
 
-  // ✅ 로그인 요청 (JWT 저장)
-  static Future<bool> login(String email, String password) async {
-    final response = await http.post(
-      Uri.parse("$_baseUrl/auth/login"),
-      headers: {"Content-Type": "application/json"},
-      body: jsonEncode({"email": email, "password": password}),
-    );
-
-    if (response.statusCode == 200) {
-      final token = jsonDecode(response.body)["token"];
-      await _saveToken(token);
-      return true;
-    } else {
-      return false;
-    }
-  }
-
   // ✅ 회원가입 요청
   static Future<bool> register(String email, String password) async {
     final response = await http.post(
@@ -36,26 +19,23 @@ class AuthService {
   }
 
   // ✅ JWT 저장
-  static Future<void> _saveToken(String token) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_tokenKey, token);
-  }
-
-  // ✅ JWT 불러오기
-  static Future<String?> getToken() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getString(_tokenKey);
-  }
-
-  // ✅ 로그아웃 (토큰 삭제)
-  static Future<void> logout() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove(_tokenKey);
-  }
-
-  // ✅ 로그인 여부 확인
   static Future<bool> isLoggedIn() async {
-    final token = await getToken();
-    return token != null;
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    bool loggedIn = prefs.containsKey('userId'); // ✅ userId가 있으면 true 반환
+    print("📡 [디버깅] 로그인 상태 확인: $loggedIn");
+    return loggedIn;
+  }
+
+  // ✅ 저장된 사용자 ID 가져오기
+  static Future<String?> getUserId() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    return prefs.getString("userId"); // userId 가져오기
+  }
+
+  // ✅ 로그아웃
+  static Future<void> logout() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.remove("userId");
+    await prefs.setBool("isLoggedIn", false);
   }
 }

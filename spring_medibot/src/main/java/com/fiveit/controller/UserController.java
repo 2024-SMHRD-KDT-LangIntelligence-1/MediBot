@@ -21,7 +21,7 @@ public class UserController {
     public ResponseEntity<String> signUp(@RequestBody SignUpRequest request) {
         try {
             User newUser = userService.registerUser(request);
-            return ResponseEntity.ok("회원가입 성공: " + newUser.getUserId());
+            return ResponseEntity.ok(newUser.getUserId());
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }

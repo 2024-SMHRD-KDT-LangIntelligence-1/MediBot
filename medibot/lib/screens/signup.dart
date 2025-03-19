@@ -958,7 +958,7 @@ class _MedicationSelectionScreenState extends State<MedicationSelectionScreen> {
         userId: userData["user"]["email"], // ✅ 이제 그냥 ID로 사용 (이메일 아님)
         username: userData["user"]["name"],
         password: userData["user"]["password"],
-        birthdate: userData["user"]["birthdate"], // ✅ YYYY-MM-DD 형식 전달
+        birthdate: userData["user"]["birthda[te"], // ✅ YYYY-MM-DD 형식 전달
         gender: userData["gender"] ?? "M",
         wakeUpTime: formatTime(userData["sleepSchedule"]["wakeUp"]),
         sleepTime: formatTime(userData["sleepSchedule"]["bedTime"]),
@@ -999,8 +999,10 @@ class _MedicationSelectionScreenState extends State<MedicationSelectionScreen> {
         context,
         MaterialPageRoute(builder: (context) => LoginScreen()),
       );
-    } catch (e) {
+    } catch (e, stackTrace) {
       print("🚨 오류 발생: $e");
+      print("🛠️ 스택 트레이스: $stackTrace"); // 스택 트레이스 출력
+
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text("회원가입 실패: $e")));

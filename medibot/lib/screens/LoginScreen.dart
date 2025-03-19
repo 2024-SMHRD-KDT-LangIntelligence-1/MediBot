@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:medibot/services/api_service.dart';
 import 'package:medibot/widgets/bottom_bar.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'signup.dart'; // 회원가입 페이지 추가
 import 'package:medibot/screens/signup.dart';
 
@@ -18,8 +19,21 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   void initState() {
     super.initState();
+    _checkLoginStatus(); // ✅ 앱 실행 시 로그인 상태 확인
+
     _emailController.addListener(_validateInput);
     _passwordController.addListener(_validateInput);
+  }
+
+  void _checkLoginStatus() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    bool isLoggedIn = prefs.getBool("isLoggedIn") ?? false;
+
+    if (isLoggedIn) {
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (context) => BottomNavBar()),
+      );
+    }
   }
 
   void _validateInput() {
@@ -42,6 +56,8 @@ class _LoginScreenState extends State<LoginScreen> {
 
       print("✅ 로그인 성공 - 사용자 ID: $loggedInUserId");
 
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      await prefs.setString('userId', userId);
       // ✅ 로그인 성공 시 화면 초기화 후 홈 화면으로 이동
       Navigator.of(context).pushAndRemoveUntil(
         MaterialPageRoute(builder: (context) => BottomNavBar()), // 홈 화면으로 이동

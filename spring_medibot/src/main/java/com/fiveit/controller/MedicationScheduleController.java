@@ -33,6 +33,7 @@ public class MedicationScheduleController {
     @GetMapping("/user/{userId}")
     public ResponseEntity<List<MedicationSchedule>> getSchedulesByUser(@PathVariable String userId) {
         List<MedicationSchedule> schedules = medicationScheduleService.getSchedulesByUser(userId);
+        System.out.println("📩 받은 요청 데이터: " + schedules); // 🔥 요청된 데이터 로그 출력
         return ResponseEntity.ok(schedules);
     }
 

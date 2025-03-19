@@ -1,3 +1,6 @@
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 
@@ -116,6 +119,69 @@ class ApiService {
       return response.body; // ✅ 성공 시 userId 반환
     } else {
       throw Exception("로그인 실패: ${response.body}");
+    }
+  }
+
+  // ✅ 저장된 로그인 정보 가져오기
+  static Future<String?> getUserId() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    return prefs.getString("userId");
+  }
+
+  // ✅ 로그아웃 (저장된 로그인 정보 삭제)
+  static Future<void> logout() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.remove("userId");
+    await prefs.setBool("isLoggedIn", false);
+  }
+
+  // ✅ 복약 기록 가져오기
+  static Future<List<Map<String, dynamic>>> getMedicationRecords() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? userId = prefs.getString("userId"); // ✅ 로그인된 사용자 ID 가져오기
+
+    if (userId == null) {
+      throw Exception("사용자 ID 없음");
+    }
+
+    final response = await http.get(
+      Uri.parse("$baseUrl/api/medication-schedules/user/$userId"),
+      headers: {"Content-Type": "application/json"},
+    );
+
+    print("📡 [디버깅] 복약 기록 응답 코드: ${response.statusCode}");
+    print("📡 [디버깅] 복약 기록 응답 데이터: ${response.body}");
+
+    if (response.statusCode == 200) {
+      final decodedBody = utf8.decode(response.bodyBytes);
+      print("📡 [디버깅] 복약 기록 응답 데이터: $decodedBody");
+
+      List<dynamic> data = jsonDecode(decodedBody);
+      return data
+          .map(
+            (item) => {
+              "name": item["mediName"], // ✅ 약 이름
+              "time": item["tmTime"], // ✅ 복약 시간
+              "taken": item["tmDone"] == true, // ✅ boolean 값 처리
+            },
+          )
+          .toList();
+    } else {
+      throw Exception("복약 기록 불러오기 실패: ${response.body}");
+    }
+  }
+
+  static Future<void> updateMedicationStatus(int tmIdx, bool isTaken) async {
+    final response = await http.put(
+      Uri.parse("$baseUrl/api/medications/update"),
+      headers: {"Content-Type": "application/json"},
+      body: jsonEncode({"tmIdx": tmIdx, "tmDone": isTaken ? "Y" : "N"}),
+    );
+
+    print("📡 [디버깅] 복약 상태 업데이트 응답 코드: ${response.statusCode}");
+
+    if (response.statusCode != 200) {
+      throw Exception("복약 상태 업데이트 실패: ${response.body}");
     }
   }
 }

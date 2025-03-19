@@ -1,5 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:medibot/services/api_service.dart';
 import 'package:table_calendar/table_calendar.dart';
 import 'package:intl/intl.dart';
 import 'MedicationDetailScreen.dart';
@@ -13,15 +14,25 @@ class MedicationRecordScreen extends StatefulWidget {
 }
 
 class _MedicationRecordScreenState extends State<MedicationRecordScreen> {
-  DateTime _selectedDay = DateTime.now();
-  List<Map<String, dynamic>> _medications = [
-    {"name": "○○", "time": "08:00 AM", "type": "식전", "taken": false},
-    {"name": "고지혈약", "time": "01:00 PM", "type": "식후", "taken": false},
-    {"name": "혈압약", "time": "07:00 PM", "type": "식후", "taken": false},
-  ];
+  // DateTime _selectedDay = DateTime.now();
+  // List<Map<String, dynamic>> _medications = [
+  //   {"name": "○○", "time": "08:00 AM", "type": "식전", "taken": false},
+  //   {"name": "고지혈약", "time": "01:00 PM", "type": "식후", "taken": false},
+  //   {"name": "혈압약", "time": "07:00 PM", "type": "식후", "taken": false},
+  // ];
 
-  double _medicationRate = 90.0; // 복약률 예제 데이터
-  String _feedbackMessage = "👍 오늘 모든 약을 잘 챙겨 먹었어요! 🎉";
+  // double _medicationRate = 90.0; // 복약률 예제 데이터
+  // String _feedbackMessage = "👍 오늘 모든 약을 잘 챙겨 먹었어요! 🎉";
+  DateTime _selectedDay = DateTime.now();
+  List<Map<String, dynamic>> _medications = [];
+  double _medicationRate = 0.0; // ✅ 복약률 동적 계산
+  String _feedbackMessage = "📊 복약 데이터를 불러오는 중...";
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchMedicationRecords();
+  }
 
   void _openChatbot() {
     showModalBottomSheet(
@@ -37,6 +48,46 @@ class _MedicationRecordScreenState extends State<MedicationRecordScreen> {
         );
       },
     );
+  }
+
+  // ✅ 복약 기록 가져오기
+  Future<void> _fetchMedicationRecords() async {
+    try {
+      List<Map<String, dynamic>> records =
+          await ApiService.getMedicationRecords();
+
+      setState(() {
+        _medications = records;
+        _calculateMedicationRate();
+      });
+    } catch (e) {
+      print("🚨 복약 기록 불러오기 실패: $e");
+      setState(() {
+        _feedbackMessage = "⚠ 복약 데이터를 불러오는 데 실패했습니다.";
+      });
+    }
+  }
+
+  // ✅ 복약률 계산 (먹은 약 수 / 전체 약 수 * 100)
+  void _calculateMedicationRate() {
+    if (_medications.isEmpty) {
+      _medicationRate = 0.0;
+      _feedbackMessage = "오늘 복용할 약이 없습니다.";
+      return;
+    }
+
+    int takenCount = _medications.where((med) => med["taken"]).length;
+    _medicationRate = (takenCount / _medications.length) * 100;
+
+    if (_medicationRate == 100) {
+      _feedbackMessage = "🎉 오늘 모든 약을 잘 챙겨 먹었어요!";
+    } else if (_medicationRate >= 50) {
+      _feedbackMessage = "😊 절반 이상 복약했어요. 조금만 더 신경 써볼까요?";
+    } else {
+      _feedbackMessage = "⚠ 약을 놓쳤어요. 꼭 챙겨 먹도록 해요!";
+    }
+
+    setState(() {});
   }
 
   @override
@@ -180,6 +231,7 @@ class _MedicationRecordScreenState extends State<MedicationRecordScreen> {
     );
   }
 
+  // ✅ 복약 체크박스 UI & DB 업데이트
   Widget _buildMedicationItem(Map<String, dynamic> med, int index) {
     return GestureDetector(
       onTap: () {
@@ -235,15 +287,24 @@ class _MedicationRecordScreenState extends State<MedicationRecordScreen> {
             ),
             const Spacer(),
             Checkbox(
-              value: med["taken"] ?? false,
-              onChanged: (bool? newValue) {
+              value: med["taken"],
+              onChanged: (bool? newValue) async {
                 setState(() {
                   _medications[index]["taken"] = newValue;
                 });
+
+                // ✅ DB 업데이트 요청
+                try {
+                  await ApiService.updateMedicationStatus(
+                    med["name"],
+                    newValue ?? false,
+                  );
+                  _calculateMedicationRate(); // ✅ 복약률 다시 계산
+                } catch (e) {
+                  print("🚨 복약 상태 업데이트 실패: $e");
+                }
               },
             ),
-            // const SizedBox(width: 8),
-            // Icon(Icons.keyboard_arrow_right, color: Colors.grey, size: 20),
           ],
         ),
       ),
