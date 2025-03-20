@@ -85,7 +85,7 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                "안녕하세요, $_userId 님 👋", // ✅ 사용자 ID 표시
+                "안녕하세요, 사용자 님 👋", // ✅ 사용자 ID 표시
                 style: TextStyle(
                   fontSize: 22, // 🔽 크기 줄임
                   fontWeight: FontWeight.bold,

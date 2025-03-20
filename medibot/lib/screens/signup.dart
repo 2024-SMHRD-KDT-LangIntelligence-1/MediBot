@@ -958,7 +958,7 @@ class _MedicationSelectionScreenState extends State<MedicationSelectionScreen> {
         userId: userData["user"]["email"], // ✅ 이제 그냥 ID로 사용 (이메일 아님)
         username: userData["user"]["name"],
         password: userData["user"]["password"],
-        birthdate: userData["user"]["birthda[te"], // ✅ YYYY-MM-DD 형식 전달
+        birthdate: userData["user"]["birthdate"], // ✅ YYYY-MM-DD 형식 전달
         gender: userData["gender"] ?? "M",
         wakeUpTime: formatTime(userData["sleepSchedule"]["wakeUp"]),
         sleepTime: formatTime(userData["sleepSchedule"]["bedTime"]),
@@ -971,7 +971,7 @@ class _MedicationSelectionScreenState extends State<MedicationSelectionScreen> {
         for (var entry in userData["medications"].entries) {
           String time = entry.key; // "9:0"처럼 저장된 값
 
-          // ✅ HH:mm 형식으로 보정
+          // ✅ HH:mm 형식으로 변환
           List<String> timeParts = time.split(":");
           String formattedTime =
               "${timeParts[0].padLeft(2, '0')}:${timeParts[1].padLeft(2, '0')}";
@@ -981,14 +981,24 @@ class _MedicationSelectionScreenState extends State<MedicationSelectionScreen> {
           print("🟢 [요청 확인] ${formattedTime} 시간에 복약 일정 추가 요청: $medications");
 
           for (var mediName in medications) {
-            MedicationSchedule scheduleData = await ApiService.createSchedule(
-              userId: userData["user"]["email"], // ✅ 이제 그냥 ID로 사용 (이메일 아님)
-              mediName: mediName,
-              tmDate: DateTime.now().toString().split(' ')[0], // YYYY-MM-DD
-              tmTime: formattedTime, // ✅ 올바른 HH:mm 형식 전달
-            );
+            for (int i = 0; i < 14; i++) {
+              // ✅ 30일 반복 저장
+              DateTime futureDate = DateTime.now().add(
+                Duration(days: i),
+              ); // 오늘 + i일
 
-            print("✅ 복약 일정 저장 완료 - 일정 ID: ${scheduleData.tmIdx}");
+              MedicationSchedule scheduleData = await ApiService.createSchedule(
+                userId: userData["user"]["email"], // ✅ 이제 그냥 ID로 사용 (이메일 아님)
+                mediName: mediName,
+                tmDate:
+                    futureDate.toString().split(' ')[0], // YYYY-MM-DD (30일 반복)
+                tmTime: formattedTime, // ✅ 올바른 HH:mm 형식 전달
+              );
+
+              print(
+                "✅ [${futureDate.toString().split(' ')[0]}] 복약 일정 저장 완료 - 일정 ID: ${scheduleData.tmIdx}",
+              );
+            }
           }
         }
       }

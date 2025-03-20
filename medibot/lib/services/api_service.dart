@@ -136,7 +136,9 @@ class ApiService {
   }
 
   // ✅ 복약 기록 가져오기
-  static Future<List<Map<String, dynamic>>> getMedicationRecords() async {
+  static Future<List<Map<String, dynamic>>> getMedicationRecords(
+    String date,
+  ) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     String? userId = prefs.getString("userId"); // ✅ 로그인된 사용자 ID 가져오기
 
@@ -145,10 +147,10 @@ class ApiService {
     }
 
     final response = await http.get(
-      Uri.parse("$baseUrl/api/medication-schedules/user/$userId"),
+      Uri.parse("$baseUrl/api/medication-schedules/user/$userId?date=$date"),
       headers: {"Content-Type": "application/json"},
     );
-
+    print("📡 [디버깅] 복약 기록 요청 - userId: $userId, date: $date");
     print("📡 [디버깅] 복약 기록 응답 코드: ${response.statusCode}");
     print("📡 [디버깅] 복약 기록 응답 데이터: ${response.body}");
 
@@ -171,17 +173,31 @@ class ApiService {
     }
   }
 
-  static Future<void> updateMedicationStatus(int tmIdx, bool isTaken) async {
+  static Future<void> updateMedicationStatus(
+    String mediName,
+    bool isTaken,
+    String tmDate, // ✅ 날짜 추가
+  ) async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? userId = prefs.getString("userId");
+
+    if (userId == null) {
+      throw Exception("사용자 ID 없음");
+    }
+
     final response = await http.put(
-      Uri.parse("$baseUrl/api/medications/update"),
+      Uri.parse("$baseUrl/api/medication-schedules/update"),
       headers: {"Content-Type": "application/json"},
-      body: jsonEncode({"tmIdx": tmIdx, "tmDone": isTaken ? "Y" : "N"}),
+      body: jsonEncode({
+        "userId": userId,
+        "mediName": mediName,
+        "tmDate": tmDate, // ✅ 날짜도 함께 보냄
+        "tmDone": isTaken, // ✅ true/false 상태 업데이트
+      }),
     );
 
-    print("📡 [디버깅] 복약 상태 업데이트 응답 코드: ${response.statusCode}");
-
     if (response.statusCode != 200) {
-      throw Exception("복약 상태 업데이트 실패: ${response.body}");
+      throw Exception("🚨 복약 상태 업데이트 실패: ${response.body}");
     }
   }
 }

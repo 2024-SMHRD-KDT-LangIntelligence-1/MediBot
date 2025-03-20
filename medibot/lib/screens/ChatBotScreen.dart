@@ -5,6 +5,9 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 
 class ChatBotScreen extends StatefulWidget {
+  final String? initialMessage; // ✅ 초기 메시지를 받을 변수 추가
+
+  ChatBotScreen({this.initialMessage});
   @override
   _ChatBotScreenState createState() => _ChatBotScreenState();
 }
@@ -13,18 +16,25 @@ class _ChatBotScreenState extends State<ChatBotScreen> {
   List<Map<String, dynamic>> messages = []; // 🔹 동적 메시지 리스트
   TextEditingController _controller = TextEditingController();
 
-  Future<void> sendMessage(String text) async {
-    if (text.trim().isEmpty) return; // 🔹 빈 입력 방지
+  @override
+  void initState() {
+    super.initState();
+    if (widget.initialMessage != null && widget.initialMessage!.isNotEmpty) {
+      // ✅ 초기 메시지를 추가하되, 바로 서버 요청까지 수행
+      _addUserMessage(widget.initialMessage!);
+    }
+  }
 
-    // 🔹 사용자 메시지 추가
+  void _addUserMessage(String text) {
     setState(() {
       messages.add({'text': text, 'isUser': true, 'time': DateTime.now()});
     });
+    _sendMessageToServer(text);
+  }
 
-    _controller.clear(); // 🔹 입력창 초기화
-
+  // ✅ 서버에 메시지를 보내는 함수 (중복 호출 방지)
+  Future<void> _sendMessageToServer(String text) async {
     try {
-      // 🔹 Flask 서버에 메시지 전송 (URL 수정)
       var response = await http.post(
         Uri.parse('http://127.0.0.1:5000/chat'),
         headers: {"Content-Type": "application/json"},
@@ -33,11 +43,9 @@ class _ChatBotScreenState extends State<ChatBotScreen> {
 
       if (response.statusCode == 200) {
         var data = jsonDecode(response.body);
-
-        // 🔹 챗봇 응답 추가
         setState(() {
           messages.add({
-            'text': data['response'], // 🔥 Flask 서버에서 받은 응답
+            'text': data['response'],
             'isUser': false,
             'time': DateTime.now(),
           });
@@ -168,7 +176,7 @@ class _ChatBotScreenState extends State<ChatBotScreen> {
                   ),
                   SizedBox(width: 8),
                   GestureDetector(
-                    onTap: () => sendMessage(_controller.text),
+                    onTap: () => _sendMessageToServer(_controller.text),
                     child: CircleAvatar(
                       backgroundColor: Colors.blueAccent,
                       radius: 24,

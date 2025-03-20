@@ -48,43 +48,30 @@ class NotificationService {
     }
   }
 
-  // 📢 **✅ 1분 후 테스트 알람 스케줄링 추가**
-  static Future<void> scheduleTestNotification(
+  static Future<void> scheduleMedicationNotification(
     int id,
-    String title,
-    String body,
+    String medicineName,
+    DateTime time,
   ) async {
-    final DateTime now = DateTime.now();
-    final DateTime testTime = now.add(Duration(minutes: 1)); // 🔥 현재 시간 + 1분 후
-
     await _notificationsPlugin.zonedSchedule(
       id,
-      title,
-      body,
-      tz.TZDateTime.from(testTime, tz.local), // 🕒 1분 후 실행
+      "💊 복약 시간 알림",
+      "$medicineName 복용할 시간입니다.",
+      tz.TZDateTime.from(time, tz.local),
       const NotificationDetails(
         android: AndroidNotificationDetails(
-          'medication_channel',
-          '복약 알림',
-          importance: Importance.high,
+          "medication_channel_id",
+          "Medication Notifications",
+          importance: Importance.max,
           priority: Priority.high,
-          sound: RawResourceAndroidNotificationSound('notification'),
+          playSound: true,
         ),
         iOS: DarwinNotificationDetails(),
       ),
       androidAllowWhileIdle: true,
       uiLocalNotificationDateInterpretation:
           UILocalNotificationDateInterpretation.absoluteTime,
+      matchDateTimeComponents: DateTimeComponents.time, // 매일 같은 시간 알림
     );
-  }
-
-  // ❌ 특정 알림 취소
-  static Future<void> cancelNotification(int id) async {
-    await _notificationsPlugin.cancel(id);
-  }
-
-  // ❌ 모든 알림 취소
-  static Future<void> cancelAllNotifications() async {
-    await _notificationsPlugin.cancelAll();
   }
 }
