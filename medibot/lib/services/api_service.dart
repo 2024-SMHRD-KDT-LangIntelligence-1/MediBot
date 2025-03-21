@@ -200,6 +200,87 @@ class ApiService {
       throw Exception("🚨 복약 상태 업데이트 실패: ${response.body}");
     }
   }
+
+  /// **📌 특정 약 + 시간에 대한 복용일자 조회 (첫날 ~ 마지막날)**
+  static Future<Map<String, String>> getMedicationDateRange(
+    String mediName,
+    String tmTime,
+  ) async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? userId = prefs.getString("userId");
+
+    if (userId == null) {
+      throw Exception("🚨 사용자 ID 없음");
+    }
+
+    final response = await http.get(
+      Uri.parse(
+        "$baseUrl/api/medication-schedules/dates?userId=$userId&mediName=$mediName&tmTime=$tmTime",
+      ),
+      headers: {"Content-Type": "application/json"},
+    );
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      return {
+        "startDate": data["startDate"] ?? "정보 없음",
+        "endDate": data["endDate"] ?? "정보 없음",
+      };
+    } else {
+      throw Exception("🚨 복용일자 조회 실패: ${response.body}");
+    }
+  }
+
+  /// **📌 특정 약 삭제 (같은 약 전체 삭제)**
+  static Future<void> deleteMedication(String mediName, String tmTime) async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? userId = prefs.getString("userId");
+
+    if (userId == null) {
+      throw Exception("🚨 사용자 ID 없음");
+    }
+
+    final response = await http.delete(
+      Uri.parse(
+        "$baseUrl/api/medication-schedules/delete?userId=$userId&mediName=$mediName&tmTime=$tmTime",
+      ),
+      headers: {"Content-Type": "application/json"},
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception("🚨 복약 일정 삭제 실패: ${response.body}");
+    }
+  }
+
+  /// **📌 복약 시간 수정**
+  static Future<void> updateMedicationTime(
+    String mediName,
+    String oldTime,
+    String newTime,
+  ) async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? userId = prefs.getString("userId");
+    print("📡 [디버깅] 복약 시간 수정 요청: $mediName, $oldTime -> $newTime");
+
+    if (userId == null) {
+      throw Exception("🚨 사용자 ID 없음");
+    }
+
+    final response = await http.post(
+      Uri.parse("$baseUrl/api/medication-schedules/update-time"),
+      headers: {"Content-Type": "application/json"},
+      body: jsonEncode({
+        "userId": userId,
+        "mediName": mediName,
+        "oldTime": oldTime,
+        "newTime": newTime,
+      }),
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception("🚨 복약 시간 수정 실패: ${response.body}");
+    }
+  }
 }
 
 class MedicationSchedule {

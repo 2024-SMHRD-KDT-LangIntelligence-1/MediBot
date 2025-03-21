@@ -2,7 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
 class IntakeTimeSelector extends StatefulWidget {
-  final Function(List<Map<String, dynamic>>) onTimesSelected; // ✅ 복용 시간 + 타입 전달
+  final Function(List<TimeOfDay>) onTimesSelected;
 
   const IntakeTimeSelector({super.key, required this.onTimesSelected});
 
@@ -11,13 +11,19 @@ class IntakeTimeSelector extends StatefulWidget {
 }
 
 class _IntakeTimeSelectorState extends State<IntakeTimeSelector> {
-  List<Map<String, dynamic>> _selectedTimes =
-      []; // ✅ {"type": "식전", "time": TimeOfDay}
-  final List<String> _options = ["식전", "식후"]; // ✅ 선택 옵션
-  TimeOfDay? _globalTime; // ✅ 전체 시간 선택 변수 추가
+  List<TimeOfDay> _selectedTimes = [];
+  TimeOfDay? _tempSelectedTime; // ✅ 사용자가 선택한 시간을 임시 저장
 
-  // 📌 전체 복용 시간 선택 다이얼로그
-  void _pickGlobalTime(BuildContext context) {
+  void _pickTime(BuildContext context) {
+    DateTime now = DateTime.now();
+    DateTime selectedDateTime = DateTime(
+      now.year,
+      now.month,
+      now.day,
+      now.hour,
+      now.minute,
+    );
+
     showCupertinoModalPopup(
       context: context,
       builder: (BuildContext context) {
@@ -40,7 +46,16 @@ class _IntakeTimeSelectorState extends State<IntakeTimeSelector> {
               Align(
                 alignment: Alignment.topRight,
                 child: TextButton(
-                  onPressed: () => Navigator.pop(context),
+                  onPressed: () {
+                    if (_tempSelectedTime != null &&
+                        !_selectedTimes.contains(_tempSelectedTime)) {
+                      setState(() {
+                        _selectedTimes.add(_tempSelectedTime!);
+                        widget.onTimesSelected(List.from(_selectedTimes));
+                      });
+                    }
+                    Navigator.pop(context); // ✅ 다이얼로그 닫기
+                  },
                   child: const Text(
                     "완료",
                     style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
@@ -50,15 +65,13 @@ class _IntakeTimeSelectorState extends State<IntakeTimeSelector> {
               Expanded(
                 child: CupertinoDatePicker(
                   mode: CupertinoDatePickerMode.time,
-                  initialDateTime: DateTime.now(),
-                  use24hFormat: false,
+                  initialDateTime: selectedDateTime,
+                  use24hFormat: true,
                   onDateTimeChanged: (DateTime newDate) {
-                    setState(() {
-                      _globalTime = TimeOfDay(
-                        hour: newDate.hour,
-                        minute: newDate.minute,
-                      );
-                    });
+                    _tempSelectedTime = TimeOfDay(
+                      hour: newDate.hour,
+                      minute: newDate.minute,
+                    ); // ✅ 스크롤할 때는 저장만 하고 추가하지 않음
                   },
                 ),
               ),
@@ -69,76 +82,10 @@ class _IntakeTimeSelectorState extends State<IntakeTimeSelector> {
     );
   }
 
-  // 📌 시간 선택 다이얼로그 (각 아이템별 개별 시간 선택)
-  void _pickTime(BuildContext context, int index) {
-    showCupertinoModalPopup(
-      context: context,
-      builder: (BuildContext context) {
-        return Container(
-          height: 300,
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.1),
-                blurRadius: 10,
-                spreadRadius: 2,
-              ),
-            ],
-          ),
-          child: Column(
-            children: [
-              Align(
-                alignment: Alignment.topRight,
-                child: TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text(
-                    "완료",
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                  ),
-                ),
-              ),
-              Expanded(
-                child: CupertinoDatePicker(
-                  mode: CupertinoDatePickerMode.time,
-                  initialDateTime: DateTime.now(),
-                  use24hFormat: false,
-                  onDateTimeChanged: (DateTime newDate) {
-                    setState(() {
-                      _selectedTimes[index]["time"] = TimeOfDay(
-                        hour: newDate.hour,
-                        minute: newDate.minute,
-                      );
-                      widget.onTimesSelected(_selectedTimes);
-                    });
-                  },
-                ),
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  // 📌 복용 시간 추가 버튼
-  void _addTime(String type) {
-    setState(() {
-      _selectedTimes.add({
-        "type": type,
-        "time": _globalTime ?? TimeOfDay.now(), // ✅ 전체 시간 선택 적용
-      });
-      widget.onTimesSelected(_selectedTimes);
-    });
-  }
-
-  // 📌 복용 시간 삭제 버튼
   void _removeTime(int index) {
     setState(() {
       _selectedTimes.removeAt(index);
-      widget.onTimesSelected(_selectedTimes);
+      widget.onTimesSelected(List.from(_selectedTimes));
     });
   }
 
@@ -147,30 +94,30 @@ class _IntakeTimeSelectorState extends State<IntakeTimeSelector> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // 📌 "복용 시간" + 전체 시간 설정 버튼
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             const Text(
-              "복용 시간 *",
+              "복약 시간 *",
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             GestureDetector(
-              onTap: () => _pickGlobalTime(context),
+              onTap: () => _pickTime(context),
               child: Container(
-                padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 8,
+                ),
                 decoration: BoxDecoration(
                   color: Colors.blueAccent,
                   borderRadius: BorderRadius.circular(16),
                 ),
-                child: Row(
+                child: const Row(
                   children: [
-                    Icon(Icons.access_time, color: Colors.white),
+                    Icon(Icons.add, color: Colors.white),
                     SizedBox(width: 8),
                     Text(
-                      _globalTime == null
-                          ? "시간 선택"
-                          : "${_globalTime!.hourOfPeriod}:${_globalTime!.minute.toString().padLeft(2, '0')} ${_globalTime!.period == DayPeriod.am ? "AM" : "PM"}",
+                      "시간 추가",
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
@@ -185,13 +132,11 @@ class _IntakeTimeSelectorState extends State<IntakeTimeSelector> {
         ),
         const SizedBox(height: 12),
 
-        // 📌 복용 시간 목록
         Column(
           children:
               _selectedTimes.asMap().entries.map((entry) {
                 int index = entry.key;
-                String type = entry.value["type"];
-                TimeOfDay time = entry.value["time"];
+                TimeOfDay time = entry.value;
 
                 return Padding(
                   padding: const EdgeInsets.symmetric(vertical: 6),
@@ -202,14 +147,12 @@ class _IntakeTimeSelectorState extends State<IntakeTimeSelector> {
                       borderRadius: BorderRadius.circular(16),
                     ),
                     child: ListTile(
-                      leading: Icon(
-                        type == "식전"
-                            ? CupertinoIcons.sunrise_fill
-                            : CupertinoIcons.moon_fill,
+                      leading: const Icon(
+                        Icons.access_time,
                         color: Colors.blueAccent,
                       ),
                       title: Text(
-                        "$type | ${time.hourOfPeriod}:${time.minute.toString().padLeft(2, '0')} ${time.period == DayPeriod.am ? "AM" : "PM"}",
+                        "${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}",
                         style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
@@ -222,65 +165,10 @@ class _IntakeTimeSelectorState extends State<IntakeTimeSelector> {
                         ),
                         onPressed: () => _removeTime(index),
                       ),
-                      onTap: () => _pickTime(context, index),
                     ),
                   ),
                 );
               }).toList(),
-        ),
-
-        const SizedBox(height: 12),
-        // 📌 "식전 추가" & "식후 추가" 버튼 (🔥 아이콘 추가 완료!)
-        Row(
-          children: [
-            Expanded(
-              child: GestureDetector(
-                onTap: () => _addTime("식전"),
-                child: Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.blueAccent,
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: const Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.sunny, color: Colors.white),
-                      SizedBox(width: 8),
-                      Text(
-                        "식전 추가",
-                        style: TextStyle(fontSize: 16, color: Colors.white),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: GestureDetector(
-                onTap: () => _addTime("식후"),
-                child: Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.purpleAccent,
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: const Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.nights_stay, color: Colors.white),
-                      SizedBox(width: 8),
-                      Text(
-                        "식후 추가",
-                        style: TextStyle(fontSize: 16, color: Colors.white),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ],
         ),
       ],
     );

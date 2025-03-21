@@ -1,12 +1,17 @@
 package com.fiveit.controller;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import com.fiveit.Service.MedicationScheduleService;
 import com.fiveit.dto.MedicationScheduleRequestDTO;
+import com.fiveit.dto.UpdateTimeRequest;
 import com.fiveit.model.MedicationSchedule;
 
+import java.time.LocalDate;
+import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -67,5 +72,70 @@ public class MedicationScheduleController {
 
         medicationScheduleService.updateMedicationStatus(userId, mediName, tmDate, tmDone);
         return ResponseEntity.ok("✅ 복약 상태 업데이트 완료");
+    }
+
+    // ✅ 특정 약 + 시간에 대한 복용일자 조회
+    @GetMapping("/dates")
+    public ResponseEntity<?> getMedicationDateRange(
+            @RequestParam String userId,
+            @RequestParam String mediName,
+            @RequestParam String tmTime) {
+        try {
+            // ✅ "HH:mm:ss" 형식의 String → LocalTime 변환
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm:ss");
+            LocalTime parsedTime = LocalTime.parse(tmTime, formatter);
+
+            // ✅ 변환된 LocalTime을 사용하여 서비스 호출
+            Map<String, String> dateRange = medicationScheduleService.getMedicationDateRange(userId, mediName,
+                    parsedTime);
+
+            return ResponseEntity.ok(dateRange);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("🚨 복용일자 조회 실패: " + e.getMessage());
+        }
+    }
+
+    // ✅ 특정 약 삭제 (같은 약 전체 삭제)
+    @DeleteMapping("/delete")
+    public ResponseEntity<?> deleteMedication(
+            @RequestParam String userId,
+            @RequestParam String mediName,
+            @RequestParam String tmTime) {
+        try {
+            // ✅ String → LocalTime 변환 (포맷: "HH:mm:ss")
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm:ss");
+            LocalTime parsedTime = LocalTime.parse(tmTime, formatter);
+
+            // ✅ 변환된 LocalTime을 사용하여 서비스 호출
+            medicationScheduleService.deleteMedication(userId, mediName, parsedTime);
+            return ResponseEntity.ok("✅ 복약 일정 삭제 성공 (약: " + mediName + ", 시간: " + tmTime + ")");
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("🚨 복약 일정 삭제 실패: " + e.getMessage());
+        }
+    }
+
+    @PostMapping("/update-time")
+    public ResponseEntity<?> updateMedicationTime(@RequestBody UpdateTimeRequest request) {
+        System.out.println("📡 요청 들어옴: " + request);
+
+        try {
+            // ✅ 문자열을 LocalTime으로 변환
+            LocalTime oldTime = LocalTime.parse(request.getOldTime());
+            LocalTime newTime = LocalTime.parse(request.getNewTime());
+
+            // ✅ Service 호출 (변환된 LocalTime 전달)
+            medicationScheduleService.updateMedicationTime(
+                    request.getUserId(),
+                    request.getMediName(),
+                    oldTime,
+                    newTime);
+
+            return ResponseEntity.ok("✅ 복약 시간 수정 완료");
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("🚨 복약 시간 수정 실패: " + e.getMessage());
+        }
     }
 }

@@ -1,4 +1,7 @@
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:intl/intl.dart';
+import 'package:medibot/services/api_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:timezone/data/latest_all.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
 import 'dart:io';
@@ -25,7 +28,13 @@ class NotificationService {
       iOS: iOSSettings,
     );
 
-    await _notificationsPlugin.initialize(settings);
+    await _notificationsPlugin.initialize(
+      settings,
+      onDidReceiveNotificationResponse: (NotificationResponse response) {
+        print("✅ 알림 클릭 감지됨! payload: ${response.payload}");
+        _handleNotificationClick(response.payload); // ✅ 알림 클릭 이벤트 처리
+      },
+    );
     tz.initializeTimeZones();
 
     await requestPermissions();
@@ -58,7 +67,7 @@ class NotificationService {
       "💊 복약 시간 알림",
       "$medicineName 복용할 시간입니다.",
       tz.TZDateTime.from(time, tz.local),
-      const NotificationDetails(
+      NotificationDetails(
         android: AndroidNotificationDetails(
           "medication_channel_id",
           "Medication Notifications",
@@ -66,12 +75,44 @@ class NotificationService {
           priority: Priority.high,
           playSound: true,
         ),
-        iOS: DarwinNotificationDetails(),
+        iOS: const DarwinNotificationDetails(),
       ),
       androidAllowWhileIdle: true,
       uiLocalNotificationDateInterpretation:
           UILocalNotificationDateInterpretation.absoluteTime,
-      matchDateTimeComponents: DateTimeComponents.time, // 매일 같은 시간 알림
+      matchDateTimeComponents: DateTimeComponents.time,
+      payload:
+          "$medicineName|${DateFormat('yyyy-MM-dd').format(time)}", // ✅ API 형식에 맞게 날짜 추가
     );
+  }
+
+  // ✅ 알림 클릭 시 실행되는 함수 (API 호출)
+  static Future<void> _handleNotificationClick(String? payload) async {
+    if (payload == null) return;
+
+    List<String> data = payload.split('|');
+    if (data.length != 2) return;
+
+    String medicineName = data[0];
+    String date = data[1];
+
+    try {
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      String? userId = prefs.getString("userId");
+
+      if (userId == null) {
+        throw Exception("🚨 사용자 ID 없음");
+      }
+
+      await ApiService.updateMedicationStatus(
+        medicineName,
+        true, // ✅ 클릭 시 자동으로 복약 체크 완료 (true)
+        date,
+      );
+
+      print("✅ 복약 체크 완료: $medicineName ($date)");
+    } catch (e) {
+      print("🚨 복약 체크 업데이트 실패: $e");
+    }
   }
 }

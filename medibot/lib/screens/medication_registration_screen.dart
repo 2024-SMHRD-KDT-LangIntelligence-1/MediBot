@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:medibot/widgets/bottom_bar.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../widgets/multi_date_picker.dart';
 import '../widgets/intake_time_selector.dart';
 import '../widgets/text_input_field.dart';
 import '../widgets/register_button.dart';
-import 'package:intl/intl.dart'; // 날짜 포맷을 위한 패키지
+import 'package:intl/intl.dart';
+import '../services/api_service.dart';
 
 class MedicationRegistrationScreen extends StatefulWidget {
   const MedicationRegistrationScreen({super.key});
@@ -15,25 +18,73 @@ class MedicationRegistrationScreen extends StatefulWidget {
 
 class _MedicationRegistrationScreenState
     extends State<MedicationRegistrationScreen> {
-  List<DateTime> _selectedDates = []; // ✅ 선택한 날짜 저장 (초기 빈 리스트 설정)
-  List<String> _formattedDates = []; // ✅ DB로 보낼 날짜 (yyyy-MM-dd 형식)
-  List<Map<String, dynamic>> _selectedIntakeTimes = []; // ✅ 수정된 타입
+  List<DateTime> _selectedDates = [];
+  List<String> _formattedDates = [];
+  List<TimeOfDay> _selectedIntakeTimes = []; // ✅ TimeOfDay 리스트로 변경
 
-  String _selectedIntakeTime = "식전";
   final TextEditingController _medicationController = TextEditingController();
-  final TextEditingController _pharmacyController = TextEditingController();
 
-  // ✅ 날짜 업데이트 함수 (DB로 보낼 수 있도록 변환)
+  // 날짜 선택 후 업데이트
   void _updateSelectedDates(List<DateTime> dates) {
     setState(() {
-      _selectedDates = List.from(dates); // ✅ Null Safety 보장
-      _selectedDates.sort((a, b) => a.compareTo(b)); // ✅ 날짜 정렬 추가
+      _selectedDates = List.from(dates);
+      _selectedDates.sort((a, b) => a.compareTo(b));
       _formattedDates =
           _selectedDates
               .map((date) => DateFormat('yyyy-MM-dd').format(date))
               .toList();
-      // print("✅ 저장된 날짜: $_formattedDates"); // 📌 선택한 날짜 확인 (디버깅용)
     });
+  }
+
+  // 복약 일정 등록 API 호출
+  void _validateAndSubmit() async {
+    if (_formattedDates.isEmpty ||
+        _selectedIntakeTimes.isEmpty ||
+        _medicationController.text.isEmpty) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('모든 필수 항목을 입력해주세요.')));
+      return;
+    }
+
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? userId = prefs.getString("userId");
+
+    if (userId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('🚨 사용자 ID를 찾을 수 없습니다. 로그인을 다시 해주세요.')),
+      );
+      return;
+    }
+
+    try {
+      for (String date in _formattedDates) {
+        for (TimeOfDay time in _selectedIntakeTimes) {
+          final String tmTime =
+              "${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}";
+
+          await ApiService.createSchedule(
+            userId: userId,
+            mediName: _medicationController.text,
+            tmDate: date,
+            tmTime: tmTime,
+          );
+        }
+      }
+      Navigator.pop(context);
+
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (context) => BottomNavBar()),
+        (route) => false,
+      );
+      // Navigator.pop(context);
+    } catch (e) {
+      print("🚨 오류 발생: $e");
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('🚨 등록 실패: $e')));
+    }
   }
 
   @override
@@ -61,20 +112,20 @@ class _MedicationRegistrationScreenState
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             MultiDatePicker(
-              selectedDates: _selectedDates, // ✅ 기존에 선택한 날짜를 유지
-              onDatesSelected: _updateSelectedDates, // ✅ 날짜 업데이트 함수 연결
+              selectedDates: _selectedDates,
+              onDatesSelected: _updateSelectedDates,
             ),
             const SizedBox(height: 16),
 
             IntakeTimeSelector(
               onTimesSelected: (times) {
-                // ✅ 타입 일치
                 setState(() {
                   _selectedIntakeTimes = times;
                 });
               },
             ),
             const SizedBox(height: 16),
+
             const Text(
               "약 이름 *",
               style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
@@ -83,27 +134,13 @@ class _MedicationRegistrationScreenState
               controller: _medicationController,
               hintText: "약 이름 입력",
             ),
-            const SizedBox(height: 16),
-            const Text(
-              "약국명 *",
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-            ),
-            TextInputField(
-              controller: _pharmacyController,
-              hintText: "약국 이름 입력",
-            ),
             const SizedBox(height: 24),
           ],
         ),
       ),
       bottomNavigationBar: Padding(
         padding: const EdgeInsets.all(16.0),
-        child: RegisterButton(
-          onPressed: () {
-            // ✅ 등록 버튼을 눌렀을 때 저장된 날짜를 출력 (DB 연동 시 활용)
-            // print("📤 DB로 보낼 날짜 데이터: $_formattedDates");
-          },
-        ),
+        child: RegisterButton(onPressed: _validateAndSubmit),
       ),
     );
   }

@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -25,5 +26,7 @@ public interface MedicationScheduleRepository extends JpaRepository<MedicationSc
                                                                                                                     // 허용
                                                                                                                     // LocalDate
                                                                                                                     // 사용
+
+    List<MedicationSchedule> findByUserIdAndMediNameAndTmTime(String userId, String mediName, LocalTime tmTime);
 
 }

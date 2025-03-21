@@ -15,8 +15,10 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
+import java.util.HashMap;
 import java.util.List;
 // import java.util.Optional;
+import java.util.Map;
 
 @Service
 public class MedicationScheduleService {
@@ -90,5 +92,64 @@ public class MedicationScheduleService {
             medicationScheduleRepository.save(schedule);
 
         }
+    }
+
+    // ✅ 특정 약 + 시간의 복용일자 조회
+    public Map<String, String> getMedicationDateRange(String userId, String mediName, LocalTime tmTime) {
+        List<MedicationSchedule> schedules = medicationScheduleRepository.findByUserIdAndMediNameAndTmTime(userId,
+                mediName, tmTime);
+
+        if (schedules.isEmpty()) {
+            throw new RuntimeException("해당 약의 복용일자가 존재하지 않습니다.");
+        }
+
+        List<String> sortedDates = schedules.stream()
+                .map(s -> s.getTmDate().toString()) // ✅ toString() 변환 후 리스트로 변환
+                .sorted() // ✅ 문자열 정렬
+                .collect(Collectors.toList()); // 리스트 변환
+
+        // ✅ 리스트의 첫 번째와 마지막 값을 저장
+        String startDate = sortedDates.get(0);
+        String endDate = sortedDates.get(sortedDates.size() - 1);
+
+        Map<String, String> dateRange = new HashMap<>();
+        dateRange.put("startDate", startDate);
+        dateRange.put("endDate", endDate);
+
+        // ✅ [디버깅] 최종 범위 출력
+        // System.out.println("📡 시작 날짜: " + startDate);
+        // System.out.println("📡 종료 날짜: " + endDate);
+
+        return dateRange;
+    }
+
+    public void deleteMedication(String userId, String mediName, LocalTime tmTime) {
+        List<MedicationSchedule> schedules = medicationScheduleRepository
+                .findByUserIdAndMediNameAndTmTime(userId, mediName, tmTime); // ✅ LocalTime → String 유지
+
+        if (schedules.isEmpty()) {
+            throw new RuntimeException("삭제할 복약 일정이 존재하지 않습니다.");
+        }
+
+        medicationScheduleRepository.deleteAll(schedules);
+    }
+
+    public void updateMedicationTime(String userId, String mediName, LocalTime oldTmTime, LocalTime newTmTime) {
+        List<MedicationSchedule> schedules = medicationScheduleRepository
+                .findByUserIdAndMediNameAndTmTime(userId, mediName, oldTmTime); // ✅ LocalTime 제거
+
+        if (schedules.isEmpty()) {
+            throw new RuntimeException("수정할 복약 일정이 존재하지 않습니다.");
+        }
+
+        for (MedicationSchedule schedule : schedules) {
+            // DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm:ss"); // ✅
+            // 시간 형식 지정
+            // LocalTime parsedTime = LocalTime.parse(newTmTime, formatter); // ✅ String →
+            // LocalTime 변환
+            schedule.setTmTime(newTmTime); // ✅ LocalTime 저장
+        }
+
+        medicationScheduleRepository.saveAll(schedules);
     }
 }
