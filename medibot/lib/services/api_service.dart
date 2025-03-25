@@ -5,7 +5,8 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 class ApiService {
-  static const String baseUrl = "http://localhost:9090";
+  // static const String baseUrl = "http://localhost:9090";
+  static const String baseUrl = "http://192.168.219.240:9090";
 
   static String convertGenderToEnum(String gender) {
     if (gender == "남성") return "M";
