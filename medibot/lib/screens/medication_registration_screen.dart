@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:google_ml_kit/google_ml_kit.dart';
 import 'package:image_picker/image_picker.dart';
@@ -11,6 +12,7 @@ import '../widgets/register_button.dart';
 import 'package:intl/intl.dart';
 import '../services/api_service.dart';
 import 'package:flutter_typeahead/flutter_typeahead.dart';
+import 'package:http/http.dart' as http;
 
 class MedicationRegistrationScreen extends StatefulWidget {
   const MedicationRegistrationScreen({super.key});
@@ -39,7 +41,7 @@ class _MedicationRegistrationScreenState
   }
 
   Future<void> _handleOCRAndSetData() async {
-    print("📥 OCR 함수 진입"); // ✅ 이거 찍히는지 확인
+    print("📥 OCR 함수 진입 (Naver Cloud OCR)");
 
     final picker = ImagePicker();
     final pickedFile = await picker.pickImage(source: ImageSource.camera);
@@ -48,54 +50,84 @@ class _MedicationRegistrationScreenState
       print("📷 이미지 선택 취소됨");
       return;
     }
-    print("📸 pickedFile: $pickedFile"); // 추가해봐
+    print("📸 pickedFile: ${pickedFile.path}");
 
-    final inputImage = InputImage.fromFile(File(pickedFile.path));
-    print("📄 inputImage created: ${pickedFile.path}");
-    final textRecognizer = TextRecognizer(script: TextRecognitionScript.korean);
-    print("🔍 textRecognizer created");
-    final recognizedText = await textRecognizer.processImage(inputImage);
-    await textRecognizer.close();
+    final bytes = await File(pickedFile.path).readAsBytes();
+    final base64Image = base64Encode(bytes);
 
-    print("🧠 OCR 전체 인식 텍스트:\n${recognizedText.text}");
-
-    final lines = recognizedText.text.split('\n');
-    final koreanLine = lines.firstWhere(
-      (line) => RegExp(r'[가-힣]').hasMatch(line),
-      orElse: () => '',
+    final url = Uri.parse(
+      "https://8mx810cn8e.apigw.ntruss.com/custom/v1/39498/3ab994bd8699d77e4b09ed85f26e9d71a204c2a32f4006cc2481c5b1549b2762/general",
     );
+    final headers = {
+      "X-OCR-SECRET": "bmNsTklGSFFOWnlqSVNKZG9KeE5CTWRId3R3Z0NDeUE=",
+      // "X-NCP-APIGW-API-KEY-ID":
+      //     "ncp_iam_BPASKR2wlPWfDF43vUz5", // <-- 여기에 본인의 클라이언트 ID 입력
+      // "X-NCP-APIGW-API-KEY":
+      //     "ncp_iam_BPKSKRS6jvEwzyasM6bdGJwiM65o2tVMkB", // <-- 여기에 본인의 클라이언트 SECRET 입력
+      "Content-Type": "application/json",
+    };
 
-    print("🔍 추출된 한글 라인: $koreanLine");
+    final body = jsonEncode({
+      "version": "V2",
+      "requestId": "sample_id",
+      "timestamp": DateTime.now().millisecondsSinceEpoch,
+      "images": [
+        {"format": "jpg", "name": "ocr_image", "data": base64Image},
+      ],
+    });
 
-    final cleaned = koreanLine.replaceAll(RegExp(r'[^가-힣0-9 ]'), '').trim();
+    try {
+      final response = await http.post(url, headers: headers, body: body);
 
-    print("✅ 정제된 약 이름: $cleaned");
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        final fields = data['images'][0]['fields'] as List<dynamic>;
+        final allText = fields.map((f) => f['inferText'].toString()).join(' ');
+        print("🧠 OCR 전체 인식 텍스트 (Naver): $allText");
 
-    if (cleaned.isNotEmpty) {
-      setState(() {
-        _medicationController.text = cleaned;
-      });
-    } else {
-      print("❌ 약 이름 인식 실패");
-    }
+        final koreanLine = allText
+            .split(' ')
+            .firstWhere(
+              (word) => RegExp(r'[가-힣]').hasMatch(word),
+              orElse: () => '',
+            );
+        print("🔍 추출된 한글 라인: $koreanLine");
 
-    if (recognizedText.text.contains("하루 1회") ||
-        recognizedText.text.contains("매일 복용")) {
-      print("📅 '하루 1회' 또는 '매일 복용' 문구 감지됨 → 2주치 날짜 자동 선택");
+        final cleaned = koreanLine.replaceAll(RegExp(r'[^가-힣0-9 ]'), '').trim();
+        print("✅ 정제된 약 이름: $cleaned");
 
-      final now = DateTime.now();
-      final twoWeeks = List<DateTime>.generate(
-        14,
-        (i) => now.add(Duration(days: i)),
-      );
+        if (cleaned.isNotEmpty) {
+          setState(() {
+            _medicationController.text = cleaned;
+          });
+        } else {
+          print("❌ 약 이름 인식 실패");
+        }
 
-      setState(() {
-        _selectedDates = twoWeeks;
-        _formattedDates =
-            twoWeeks.map((d) => DateFormat('yyyy-MM-dd').format(d)).toList();
-      });
-    } else {
-      print("📅 자동 날짜 선택 조건에 해당 없음");
+        if (allText.contains("하루 1회") || allText.contains("매일 복용")) {
+          print("📅 '하루 1회' 또는 '매일 복용' 문구 감지됨 → 2주치 날짜 자동 선택");
+
+          final now = DateTime.now();
+          final twoWeeks = List<DateTime>.generate(
+            14,
+            (i) => now.add(Duration(days: i)),
+          );
+
+          setState(() {
+            _selectedDates = twoWeeks;
+            _formattedDates =
+                twoWeeks
+                    .map((d) => DateFormat('yyyy-MM-dd').format(d))
+                    .toList();
+          });
+        } else {
+          print("📅 자동 날짜 선택 조건에 해당 없음");
+        }
+      } else {
+        print("❌ 네이버 OCR API 실패: ${response.body}");
+      }
+    } catch (e) {
+      print("❌ 예외 발생: $e");
     }
   }
 
