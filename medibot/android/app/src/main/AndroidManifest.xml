@@ -20,11 +20,13 @@
             <action android:name="android.intent.action.MY_PACKAGE_REPLACED"/>
         </intent-filter>
     </receiver>
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     
     <!-- 🟢 알림 채널 설정 -->
     <meta-data
         android:name="com.google.firebase.messaging.default_notification_channel_id"
         android:value="medication_channel"/>
+        
         <activity
             android:name=".MainActivity"
             android:exported="true"
@@ -52,6 +54,9 @@
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
+            <meta-data
+        android:name="com.kakao.sdk.AppKey"
+        android:value="b6ea247c7b4417edec15b21b3cac0183" />
     </application>
     <!-- Required to query activities that can process text, see:
          https://developer.android.com/training/package-visibility and

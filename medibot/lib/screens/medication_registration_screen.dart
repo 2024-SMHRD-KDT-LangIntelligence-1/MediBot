@@ -10,6 +10,7 @@ import '../widgets/text_input_field.dart';
 import '../widgets/register_button.dart';
 import 'package:intl/intl.dart';
 import '../services/api_service.dart';
+import 'package:flutter_typeahead/flutter_typeahead.dart';
 
 class MedicationRegistrationScreen extends StatefulWidget {
   const MedicationRegistrationScreen({super.key});
@@ -161,54 +162,127 @@ class _MedicationRegistrationScreenState
           onPressed: () => Navigator.pop(context),
         ),
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            MultiDatePicker(
-              selectedDates: _selectedDates,
-              onDatesSelected: _updateSelectedDates,
-            ),
-            const SizedBox(height: 16),
-            IntakeTimeSelector(
-              onTimesSelected: (times) {
-                setState(() {
-                  _selectedIntakeTimes = times;
-                });
-              },
-            ),
-            const SizedBox(height: 16),
-            const Text(
-              "약 이름 *",
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                Expanded(
-                  child: TextInputField(
-                    controller: _medicationController,
-                    hintText: "약 이름 입력",
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              MultiDatePicker(
+                selectedDates: _selectedDates,
+                onDatesSelected: _updateSelectedDates,
+              ),
+              const SizedBox(height: 16),
+              IntakeTimeSelector(
+                onTimesSelected: (times) {
+                  setState(() {
+                    _selectedIntakeTimes = times;
+                  });
+                },
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                "약 이름 *",
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Expanded(
+                    child: TypeAheadField<String>(
+                      suggestionsCallback: (pattern) async {
+                        if (pattern.trim().isEmpty) return [];
+                        return await ApiService.searchDrugByName(pattern);
+                      },
+                      itemBuilder: (context, suggestion) {
+                        return Container(
+                          color: Colors.white,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 10,
+                          ),
+                          child: Row(
+                            children: [
+                              const Icon(
+                                Icons.medication_outlined,
+                                color: Colors.blueAccent,
+                              ),
+                              const SizedBox(width: 12),
+                              Text(
+                                suggestion,
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                      onSelected: (suggestion) {
+                        _medicationController.text = suggestion;
+                        setState(() {});
+                      },
+                      builder: (context, controller, focusNode) {
+                        controller.text = _medicationController.text;
+                        return Container(
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(12),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black12,
+                                blurRadius: 4,
+                                offset: Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: TextField(
+                            controller: controller,
+                            focusNode: focusNode,
+                            decoration: const InputDecoration(
+                              hintText: "약 이름 검색",
+                              contentPadding: EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 14,
+                              ),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.all(
+                                  Radius.circular(12),
+                                ),
+                                borderSide: BorderSide.none,
+                              ),
+                            ),
+                            onChanged: (value) {
+                              _medicationController.text = value;
+                            },
+                          ),
+                        );
+                      },
+                    ),
                   ),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.camera_alt, color: Colors.blueAccent),
-                  onPressed: () async {
-                    print("📸 카메라 버튼 클릭됨"); // ← 이거 먼저 찍히는지 확인!
-                    await _handleOCRAndSetData();
-                  },
-                ),
-              ],
-            ),
-          ],
+                  IconButton(
+                    icon: const Icon(
+                      Icons.camera_alt,
+                      color: Colors.blueAccent,
+                    ),
+                    onPressed: () async {
+                      print("📸 카메라 버튼 클릭됨");
+                      await _handleOCRAndSetData();
+                    },
+                  ),
+                ],
+              ),
+              const SizedBox(height: 200),
+            ],
+          ),
         ),
       ),
       bottomNavigationBar: Padding(
         padding: const EdgeInsets.all(16.0),
         child: RegisterButton(onPressed: _validateAndSubmit),
       ),
+      resizeToAvoidBottomInset: true,
     );
   }
 }

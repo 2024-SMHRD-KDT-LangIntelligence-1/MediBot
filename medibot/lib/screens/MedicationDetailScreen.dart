@@ -21,15 +21,51 @@ class _MedicationDetailScreenState extends State<MedicationDetailScreen> {
   String _dateRange = "조회 중...";
   late String _selectedTime;
   late String _initialTime; // ✅ 초기 시간 저장용 변수
+  String? _selectedMessage;
 
   @override
   void initState() {
     super.initState();
     _selectedTime = widget.time;
     _initialTime = widget.time; // ✅ 초기 시간 따로 저장
+    _selectedMessage = (_messages..shuffle()).first;
 
     _fetchDateRange();
   }
+
+  final List<String> _messages = [
+    "이 약은 제 시간에 복용하는 것이 중요해요.",
+    "복용 시간, 놓치지 마세요 ⏰",
+    "건강은 습관에서 시작돼요.",
+    "오늘도 건강한 하루 되세요 ☀️",
+    "약을 규칙적으로 먹으면 더 빨리 회복돼요!",
+    "당신의 건강을 응원합니다 💪",
+    "한 알의 약, 큰 건강 🌿",
+    "시간 맞춰 복용하는 습관, 잊지 마세요.",
+    "오늘도 꼼꼼하게 복약 완료!",
+    "약 먹는 것도 자기관리의 시작이에요 🧘‍♀️",
+    "잘하고 있어요! 지금처럼만 계속 💙",
+    "잠깐! 약 드셨나요? 😌",
+    "당신의 몸도 당신의 노력을 기억해요 🙏",
+    "꾸준함은 최고의 치료제입니다.",
+    "작은 습관이 큰 변화를 만듭니다 🌱",
+    "지금의 습관이 내일의 건강을 만듭니다.",
+    "하루 한 번, 당신을 위한 케어 💊",
+    "오늘도 잊지 않고 챙기셨네요! 👍",
+    "시간은 약, 그리고 약도 시간입니다.",
+    "내 몸을 위한 약속, 지금 지켜볼까요?",
+    "천천히, 하지만 꾸준히가 중요해요.",
+    "조금씩, 하지만 매일같이 ✨",
+    "잊지 마세요, 당신은 소중한 사람이에요 ❤️",
+    "건강은 내가 챙기는 최고의 자산이에요.",
+    "당신은 이미 잘하고 있어요 👏",
+    "오늘도 나 자신을 위한 작은 실천 💖",
+    "건강은 꾸준함 속에 자랍니다.",
+    "이 약은 당신을 위한 응원이에요 🙌",
+    "하루하루의 복약이 미래를 바꿔요.",
+    "스스로를 아끼는 가장 좋은 방법입니다.",
+    "시간 지켜서 먹는 습관, 건강 지키는 첫 걸음!",
+  ];
 
   /// ✅ 복용일자 조회
   Future<void> _fetchDateRange() async {
@@ -200,99 +236,107 @@ class _MedicationDetailScreenState extends State<MedicationDetailScreen> {
         ],
       ),
       backgroundColor: Colors.white,
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // ✅ 맨 위: 약 이름 표시
             Container(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+              decoration: BoxDecoration(
+                color: Colors.white, // 밝은 배경색
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.03),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Text(
+                    widget.medName,
+                    style: const TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.black,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    _selectedMessage!,
+                    style: const TextStyle(fontSize: 14, color: Colors.grey),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 24),
+
+            // 복용일자
+            const Text(
+              "복용일자",
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.grey.shade300),
               ),
-              child: Text(
-                widget.medName,
-                style: const TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                ),
-                textAlign: TextAlign.center,
-              ),
+              child: Text(_dateRange, style: const TextStyle(fontSize: 16)),
             ),
-            const SizedBox(height: 16),
 
-            // ✅ 복용일자 표시
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text(
-                  "복용일자",
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                ),
-                Text(
-                  _dateRange,
-                  style: const TextStyle(fontSize: 16, color: Colors.black),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-
-            // ✅ 복약 시간 선택 가능하도록 변경 (iOS 스타일)
+            const SizedBox(height: 24),
             const Text(
               "복약 시간",
               style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
             GestureDetector(
-              onTap: _pickTime, // ✅ iOS 스타일 시간 선택 다이얼로그 실행
+              onTap: _pickTime,
               child: Container(
                 padding: const EdgeInsets.symmetric(
-                  vertical: 12,
+                  vertical: 14,
                   horizontal: 16,
                 ),
                 decoration: BoxDecoration(
                   color: Colors.white,
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(12),
                   border: Border.all(color: Colors.grey.shade300),
                 ),
                 child: Row(
                   children: [
                     const Icon(Icons.access_time, color: Colors.blueAccent),
-                    const SizedBox(width: 12),
-                    Text(
-                      _selectedTime,
-                      style: const TextStyle(fontSize: 16, color: Colors.black),
-                    ),
+                    const SizedBox(width: 10),
+                    Text(_selectedTime, style: const TextStyle(fontSize: 16)),
                   ],
                 ),
               ),
             ),
-            const SizedBox(height: 24),
 
-            // ✅ 확인 버튼
+            const SizedBox(height: 32),
             SizedBox(
               width: double.infinity,
-              child: ElevatedButton(
-                onPressed: () async {
-                  if (_selectedTime != _initialTime) {
-                    await _updateMedicationTime(_selectedTime); // ✅ 시간 업데이트
-                  }
-                  Navigator.pop(context); // ✅ 완료 후 이전 화면으로 이동
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blueAccent,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                ),
+              child: CupertinoButton(
+                color: Colors.blueAccent,
+                borderRadius: BorderRadius.circular(12),
+                padding: const EdgeInsets.symmetric(vertical: 14),
                 child: const Text(
                   "확인",
                   style: TextStyle(fontSize: 16, color: Colors.white),
                 ),
+                onPressed: () async {
+                  if (_selectedTime != _initialTime) {
+                    await _updateMedicationTime(_selectedTime);
+                  }
+                  Navigator.pop(context);
+                },
               ),
             ),
           ],

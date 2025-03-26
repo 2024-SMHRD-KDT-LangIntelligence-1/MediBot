@@ -1,5 +1,6 @@
-import Flutter
 import UIKit
+import Flutter
+import WebKit  // ✅ 추가
 
 @main
 @objc class AppDelegate: FlutterAppDelegate {

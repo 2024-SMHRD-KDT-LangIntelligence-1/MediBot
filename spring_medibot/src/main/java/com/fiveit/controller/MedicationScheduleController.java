@@ -118,7 +118,7 @@ public class MedicationScheduleController {
 
     @PostMapping("/update-time")
     public ResponseEntity<?> updateMedicationTime(@RequestBody UpdateTimeRequest request) {
-        System.out.println("📡 요청 들어옴: " + request);
+        // System.out.println("📡 요청 들어옴: " + request);
 
         try {
             // ✅ 문자열을 LocalTime으로 변환

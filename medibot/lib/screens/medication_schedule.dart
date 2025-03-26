@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import 'MedicationDetailScreen.dart';
 import 'ChatBotScreen.dart';
 import 'package:medibot/services/NotificationService.dart'; // 🔥 알림 서비스 추가
+import 'Medi_InfoScreen.dart';
 
 class MedicationRecordScreen extends StatefulWidget {
   const MedicationRecordScreen({super.key});
@@ -32,6 +33,19 @@ class _MedicationRecordScreenState extends State<MedicationRecordScreen> {
   void didChangeDependencies() {
     super.didChangeDependencies();
     _fetchMedicationRecords(); // ✅ 항상 데이터 새로 불러오기
+  }
+
+  void _navigateToRecordScreen(String medName, String time) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder:
+            (context) => Medi_InfoScreen(
+              medName: medName,
+              tmTime: time, // ✅ 복용 시간도 넘겨줌
+            ),
+      ),
+    );
   }
 
   void _onDaySelected(DateTime selectedDay, DateTime focusedDay) {
@@ -231,10 +245,10 @@ class _MedicationRecordScreenState extends State<MedicationRecordScreen> {
                                   const SizedBox(width: 6),
                                   GestureDetector(
                                     onTap:
-                                        () => _navigateToDetailScreen(
+                                        () => _navigateToRecordScreen(
                                           med["name"],
                                           time,
-                                        ), // ✅ 상세 화면 이동
+                                        ), // ✅ 새로운 기록 화면으로 이동
                                     child: Text(
                                       med["name"],
                                       style: const TextStyle(
@@ -246,16 +260,31 @@ class _MedicationRecordScreenState extends State<MedicationRecordScreen> {
                                   ),
                                 ],
                               ),
-                              trailing: GestureDetector(
-                                onTap: () {
-                                  _openChatbotWithMedicineInfo(
-                                    med["name"],
-                                  ); // ✅ 챗봇 실행
-                                },
-                                child: const Icon(
-                                  Icons.chat_bubble_outline,
-                                  color: Colors.grey,
-                                ),
+                              trailing: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  GestureDetector(
+                                    onTap: () {
+                                      _openChatbotWithMedicineInfo(med["name"]);
+                                    },
+                                    child: const Icon(
+                                      Icons.chat_bubble_outline,
+                                      color: Colors.grey,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  GestureDetector(
+                                    onTap:
+                                        () => _navigateToDetailScreen(
+                                          med["name"],
+                                          time,
+                                        ), // ✅ 설정 아이콘으로 기존 화면 이동
+                                    child: const Icon(
+                                      Icons.settings,
+                                      color: Colors.grey,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
                           );
@@ -349,6 +378,25 @@ class _MedicationRecordScreenState extends State<MedicationRecordScreen> {
             _buildMedicationList(),
           ],
         ),
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          showModalBottomSheet(
+            context: context,
+            isScrollControlled: true,
+            shape: const RoundedRectangleBorder(
+              borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+            ),
+            builder: (context) {
+              return FractionallySizedBox(
+                heightFactor: 0.85,
+                child: ChatBotScreen(),
+              );
+            },
+          );
+        },
+        backgroundColor: Colors.indigoAccent,
+        child: const Icon(Icons.smart_toy_outlined),
       ),
     );
   }

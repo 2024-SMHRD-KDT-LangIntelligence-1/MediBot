@@ -40,6 +40,19 @@ class NotificationService {
     await requestPermissions();
   }
 
+  static final List<String> _messages = [
+    "오늘도 건강 잘 챙기고 계시네요 😊",
+    "한 알의 약, 큰 건강 🌿",
+    "시간 맞춰 복용하는 습관, 멋져요!",
+    "작은 습관이 큰 건강을 만듭니다.",
+    "잘하고 있어요! 계속 이렇게만!",
+    "복약 시간이에요! 건강을 위한 한 걸음 🏃",
+    "꾸준함은 최고의 치료제입니다 💊",
+    "몸도 마음도 오늘도 챙겨보세요 ☀️",
+    "이 약은 당신을 위한 응원이에요 🙌",
+    "잠깐! 약 챙기셨나요? 😌",
+  ];
+
   // 📢 **권한 요청 함수 (Android 13+ & iOS)**
   static Future<void> requestPermissions() async {
     if (Platform.isAndroid) {
@@ -62,11 +75,33 @@ class NotificationService {
     String medicineName,
     DateTime time,
   ) async {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final targetDate = DateTime(time.year, time.month, time.day);
+
+    if (today != targetDate) {
+      print(
+        "🚫 오늘 일정 아님 → 알림 예약 안 함: $medicineName (${DateFormat('yyyy-MM-dd').format(time)})",
+      );
+      return;
+    }
+
+    // ✅ 랜덤 멘트 선택
+    final message =
+        _messages[DateTime.now().millisecondsSinceEpoch % _messages.length];
+
+    final scheduledTime = tz.TZDateTime.from(time, tz.local);
+
+    if (scheduledTime.isBefore(tz.TZDateTime.now(tz.local))) {
+      print("🚫 예약 시간 이미 지남 → 알림 예약 안 함: $medicineName ($scheduledTime)");
+      return;
+    }
+
     await _notificationsPlugin.zonedSchedule(
       id,
       "💊 복약 시간 알림",
-      "$medicineName 복용할 시간입니다.",
-      tz.TZDateTime.from(time, tz.local),
+      "$medicineName 복용할 시간입니다.\n$message",
+      scheduledTime,
       NotificationDetails(
         android: AndroidNotificationDetails(
           "medication_channel_id",
@@ -80,9 +115,8 @@ class NotificationService {
       androidAllowWhileIdle: true,
       uiLocalNotificationDateInterpretation:
           UILocalNotificationDateInterpretation.absoluteTime,
-      matchDateTimeComponents: DateTimeComponents.time,
-      payload:
-          "$medicineName|${DateFormat('yyyy-MM-dd').format(time)}", // ✅ API 형식에 맞게 날짜 추가
+      matchDateTimeComponents: null,
+      payload: "$medicineName|${DateFormat('yyyy-MM-dd').format(time)}",
     );
   }
 

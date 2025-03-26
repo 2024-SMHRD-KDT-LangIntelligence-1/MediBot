@@ -6,7 +6,7 @@ import 'package:http/http.dart' as http;
 
 class ApiService {
   // static const String baseUrl = "http://localhost:9090";
-  static const String baseUrl = "http://192.168.219.240:9090";
+  static const String baseUrl = "http://192.168.219.47:9090";
 
   static String convertGenderToEnum(String gender) {
     if (gender == "남성") return "M";
@@ -113,8 +113,8 @@ class ApiService {
       body: jsonEncode({"userId": userId, "password": password}),
     );
 
-    print("📡 [디버깅] 로그인 응답 코드: ${response.statusCode}");
-    print("📡 [디버깅] 로그인 응답 본문: ${response.body}");
+    // print("📡 [디버깅] 로그인 응답 코드: ${response.statusCode}");
+    // print("📡 [디버깅] 로그인 응답 본문: ${response.body}");
 
     if (response.statusCode == 200) {
       return response.body; // ✅ 성공 시 userId 반환
@@ -151,13 +151,13 @@ class ApiService {
       Uri.parse("$baseUrl/api/medication-schedules/user/$userId?date=$date"),
       headers: {"Content-Type": "application/json"},
     );
-    print("📡 [디버깅] 복약 기록 요청 - userId: $userId, date: $date");
-    print("📡 [디버깅] 복약 기록 응답 코드: ${response.statusCode}");
-    print("📡 [디버깅] 복약 기록 응답 데이터: ${response.body}");
+    // print("📡 [디버깅] 복약 기록 요청 - userId: $userId, date: $date");
+    // print("📡 [디버깅] 복약 기록 응답 코드: ${response.statusCode}");
+    // print("📡 [디버깅] 복약 기록 응답 데이터: ${response.body}");
 
     if (response.statusCode == 200) {
       final decodedBody = utf8.decode(response.bodyBytes);
-      print("📡 [디버깅] 복약 기록 응답 데이터: $decodedBody");
+      // print("📡 [디버깅] 복약 기록 응답 데이터: $decodedBody");
 
       List<dynamic> data = jsonDecode(decodedBody);
       return data
@@ -261,7 +261,7 @@ class ApiService {
   ) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     String? userId = prefs.getString("userId");
-    print("📡 [디버깅] 복약 시간 수정 요청: $mediName, $oldTime -> $newTime");
+    // print("📡 [디버깅] 복약 시간 수정 요청: $mediName, $oldTime -> $newTime");
 
     if (userId == null) {
       throw Exception("🚨 사용자 ID 없음");
@@ -280,6 +280,55 @@ class ApiService {
 
     if (response.statusCode != 200) {
       throw Exception("🚨 복약 시간 수정 실패: ${response.body}");
+    }
+  }
+
+  static Future<List<String>> searchDrugByName(String query) async {
+    try {
+      final response = await http.get(
+        Uri.parse(
+          '$baseUrl/api/drug-info/search?name=${Uri.encodeQueryComponent(query)}',
+        ),
+      );
+
+      print("📡 요청 URL: $baseUrl/api/drug-info/search?name=$query");
+      print("📡 응답 코드: ${response.statusCode}");
+      print("📡 응답 본문: ${response.body}");
+
+      if (response.statusCode == 200) {
+        final List data = json.decode(utf8.decode(response.bodyBytes));
+        print("🟢 검색 결과 리스트: ${data.length}개");
+        return data.map<String>((item) => item.toString()).toList();
+      } else {
+        throw Exception('❌ 약 정보 검색 실패: ${response.body}');
+      }
+    } catch (e) {
+      print("🚨 예외 발생: $e");
+      return [];
+    }
+  }
+
+  static Future<DrugInfo?> fetchDrugDetailByName(String name) async {
+    try {
+      final response = await http.get(
+        Uri.parse(
+          '$baseUrl/api/drug-info/detail?name=${Uri.encodeQueryComponent(name)}',
+        ),
+      );
+
+      if (response.statusCode == 200) {
+        final List data = jsonDecode(utf8.decode(response.bodyBytes));
+        print(
+          "🟢 [API 응답] 약 정보 (Pretty):\n${const JsonEncoder.withIndent('  ').convert(data)}",
+        );
+        if (data.isNotEmpty) {
+          return DrugInfo.fromJson(data[0]); // 첫 번째 약 정보만 사용
+        }
+      }
+      return null;
+    } catch (e) {
+      print("🚨 약 상세 정보 로딩 실패: $e");
+      return null;
     }
   }
 }
@@ -326,5 +375,21 @@ class MedicationSchedule {
       "tm_done": tmDone,
       "real_tm_at": realTmAt, // nullable
     };
+  }
+}
+
+class DrugInfo {
+  final String mediName;
+  final String? sideEffectsFromRepo;
+  final String? mediInter; // ✅ 추가
+
+  DrugInfo({required this.mediName, this.sideEffectsFromRepo, this.mediInter});
+
+  factory DrugInfo.fromJson(Map<String, dynamic> json) {
+    return DrugInfo(
+      mediName: json['mediName'] ?? '',
+      sideEffectsFromRepo: json['sideEffectsFromRepo'],
+      mediInter: json['mediInter'], // ✅ 매핑
+    );
   }
 }
