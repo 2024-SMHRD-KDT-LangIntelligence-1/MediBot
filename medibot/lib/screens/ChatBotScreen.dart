@@ -5,7 +5,7 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 
 class ChatBotScreen extends StatefulWidget {
-  final String? initialMessage; // ✅ 초기 메시지를 받을 변수 추가
+  final String? initialMessage;
 
   ChatBotScreen({this.initialMessage});
   @override
@@ -13,14 +13,13 @@ class ChatBotScreen extends StatefulWidget {
 }
 
 class _ChatBotScreenState extends State<ChatBotScreen> {
-  List<Map<String, dynamic>> messages = []; // 🔹 동적 메시지 리스트
+  List<Map<String, dynamic>> messages = [];
   TextEditingController _controller = TextEditingController();
 
   @override
   void initState() {
     super.initState();
     if (widget.initialMessage != null && widget.initialMessage!.isNotEmpty) {
-      // ✅ 초기 메시지를 추가하되, 바로 서버 요청까지 수행
       _addUserMessage(widget.initialMessage!);
     }
   }
@@ -32,20 +31,22 @@ class _ChatBotScreenState extends State<ChatBotScreen> {
     _sendMessageToServer(text);
   }
 
-  // ✅ 서버에 메시지를 보내는 함수 (중복 호출 방지)
   Future<void> _sendMessageToServer(String text) async {
     try {
       var response = await http.post(
-        Uri.parse('http://127.0.0.1:5000/chat'),
+        Uri.parse('http://192.168.219.244:9090/api/chat'),
         headers: {"Content-Type": "application/json"},
         body: jsonEncode({"message": text}),
       );
 
       if (response.statusCode == 200) {
-        var data = jsonDecode(response.body);
+        // 🛠 UTF-8 인코딩 처리
+        var decoded = jsonDecode(utf8.decode(response.bodyBytes));
+
+        if (!mounted) return;
         setState(() {
           messages.add({
-            'text': data['response'],
+            'text': decoded['answer'], // ✅ 응답 필드 이름 주의
             'isUser': false,
             'time': DateTime.now(),
           });
@@ -59,17 +60,22 @@ class _ChatBotScreenState extends State<ChatBotScreen> {
   }
 
   @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Color(0xFFE7EBF0), // 연한 블루-그레이 배경
+      backgroundColor: Color(0xFFE7EBF0),
       body: Column(
         children: [
-          // 🔹 경계 없는 상단 바
           Container(
             padding: EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: [Color(0xFF847AD1), Color(0xFF7AA4E5)], // 중간톤 보라-파랑
+                colors: [Color(0xFF847AD1), Color(0xFF7AA4E5)],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
@@ -119,7 +125,6 @@ class _ChatBotScreenState extends State<ChatBotScreen> {
             ),
           ),
 
-          // 🔹 오늘 날짜
           Padding(
             padding: EdgeInsets.symmetric(vertical: 8),
             child: Text(
@@ -128,7 +133,6 @@ class _ChatBotScreenState extends State<ChatBotScreen> {
             ),
           ),
 
-          // 🔹 메시지 영역 (동적으로 업데이트)
           Expanded(
             child: Padding(
               padding: EdgeInsets.symmetric(horizontal: 16),
@@ -136,10 +140,9 @@ class _ChatBotScreenState extends State<ChatBotScreen> {
                 reverse: true,
                 itemCount: messages.length,
                 itemBuilder: (context, index) {
-                  var msg =
-                      messages[messages.length - 1 - index]; // 🔹 최신 메시지가 아래로
+                  var msg = messages[messages.length - 1 - index];
                   return ChatBubble(
-                    text: msg['text'],
+                    text: msg['text'] ?? '',
                     isUser: msg['isUser'],
                     avatar: msg['isUser'] ? Icons.person : Icons.smart_toy,
                     name: msg['isUser'] ? "사용자" : "MediBot",
@@ -150,8 +153,7 @@ class _ChatBotScreenState extends State<ChatBotScreen> {
             ),
           ),
 
-          SizedBox(height: 12), // 🔹 마지막 대화창과 입력창 사이 간격 추가
-          // 🔹 입력창 (화면 맨 아래 고정)
+          SizedBox(height: 12),
           Container(
             padding: EdgeInsets.only(left: 16, right: 16, bottom: 8, top: 12),
             decoration: BoxDecoration(color: Color(0xFFE7EBF0)),
@@ -176,7 +178,13 @@ class _ChatBotScreenState extends State<ChatBotScreen> {
                   ),
                   SizedBox(width: 8),
                   GestureDetector(
-                    onTap: () => _sendMessageToServer(_controller.text),
+                    onTap: () {
+                      final text = _controller.text.trim();
+                      if (text.isNotEmpty && mounted) {
+                        _controller.clear();
+                        _addUserMessage(text);
+                      }
+                    },
                     child: CircleAvatar(
                       backgroundColor: Colors.blueAccent,
                       radius: 24,
@@ -193,7 +201,6 @@ class _ChatBotScreenState extends State<ChatBotScreen> {
   }
 }
 
-// 🔹 메시지 말풍선 + 프로필 아이콘 + 이름 + 시간
 class ChatBubble extends StatelessWidget {
   final String text;
   final bool isUser;

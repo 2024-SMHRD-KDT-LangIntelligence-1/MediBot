@@ -1,7 +1,7 @@
 import 'dart:io';
 import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:google_ml_kit/google_ml_kit.dart';
+// import 'package:google_ml_kit/google_ml_kit.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:medibot/widgets/bottom_bar.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -85,15 +85,45 @@ class _MedicationRegistrationScreenState
         final allText = fields.map((f) => f['inferText'].toString()).join(' ');
         print("🧠 OCR 전체 인식 텍스트 (Naver): $allText");
 
-        final koreanLine = allText
-            .split(' ')
-            .firstWhere(
-              (word) => RegExp(r'[가-힣]').hasMatch(word),
-              orElse: () => '',
-            );
-        print("🔍 추출된 한글 라인: $koreanLine");
+        final lines =
+            allText
+                .split(RegExp(r'\s+'))
+                .map((e) => e.trim())
+                .where((e) => e.isNotEmpty)
+                .toList();
 
-        final cleaned = koreanLine.replaceAll(RegExp(r'[^가-힣0-9 ]'), '').trim();
+        print("🔍 분리된 텍스트 라인: $lines");
+
+        final candidates =
+            lines.where((line) {
+              return line.contains(RegExp(r'[가-힣]')) &&
+                  line.length >= 2 &&
+                  line.length <= 30 &&
+                  !line.contains(
+                    RegExp(
+                      r'(제조자|수입자|서울특별시|https|의약품안전나라|품목허가사항|용산구|식품의약품안전처|참조|용산타워|판매)',
+                    ),
+                  );
+            }).toList();
+
+        print("🔍 후보 라인: $candidates");
+
+        String? matchedDrug;
+        for (final line in candidates) {
+          final matches = await ApiService.searchDrugByName(line);
+          if (matches.isNotEmpty) {
+            matchedDrug = matches.first;
+            break;
+          }
+        }
+
+        print("🔍 백엔드 검색 결과에서 매칭된 약 이름: $matchedDrug");
+
+        final cleaned =
+            (matchedDrug ?? '')
+                .replaceAll(RegExp(r'[^가-힣0-9a-zA-Z ]'), '')
+                .trim();
+
         print("✅ 정제된 약 이름: $cleaned");
 
         if (cleaned.isNotEmpty) {
