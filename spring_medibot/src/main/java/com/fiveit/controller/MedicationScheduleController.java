@@ -138,4 +138,18 @@ public class MedicationScheduleController {
                     .body("🚨 복약 시간 수정 실패: " + e.getMessage());
         }
     }
+
+    // ✅ 복약 패턴 분석 API
+    @GetMapping("/pattern")
+    public ResponseEntity<?> analyzeMedicationPattern(@RequestParam String userId) {
+        try {
+            List<Map<String, Object>> result = medicationScheduleService.analyzeMedicationPattern(userId);
+            System.out.println("🔍 패턴 분석 결과: " + result); // 디버깅용 로그 추가
+
+            return ResponseEntity.ok(result);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("🚨 복약 패턴 분석 실패: " + e.getMessage());
+        }
+    }
 }

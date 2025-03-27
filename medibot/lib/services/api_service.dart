@@ -331,6 +331,31 @@ class ApiService {
       return null;
     }
   }
+
+  /// ✅ 복약 패턴 분석 결과 가져오기
+  static Future<List<Map<String, dynamic>>> getPatternAnalysis() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? userId = prefs.getString("userId");
+
+    if (userId == null) {
+      throw Exception("🚨 사용자 ID 없음");
+    }
+
+    final response = await http.get(
+      Uri.parse("$baseUrl/api/medication-schedules/pattern?userId=$userId"),
+      headers: {"Content-Type": "application/json"},
+    );
+
+    if (response.statusCode == 200) {
+      final decoded = utf8.decode(response.bodyBytes);
+      final List<dynamic> data = jsonDecode(decoded);
+      return data
+          .map<Map<String, dynamic>>((item) => Map<String, dynamic>.from(item))
+          .toList();
+    } else {
+      throw Exception("🚨 복약 패턴 분석 실패: ${response.body}");
+    }
+  }
 }
 
 class MedicationSchedule {

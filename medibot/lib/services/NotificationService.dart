@@ -6,6 +6,7 @@ import 'package:timezone/data/latest_all.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
 import 'dart:io';
 import 'package:permission_handler/permission_handler.dart';
+// import 'package:android_intent_plus/android_intent_plus.dart';
 
 class NotificationService {
   static final FlutterLocalNotificationsPlugin _notificationsPlugin =
@@ -39,6 +40,15 @@ class NotificationService {
 
     await requestPermissions();
   }
+
+  // static Future<void> requestExactAlarmPermission() async {
+  //   if (Platform.isAndroid && Platform.version.compareTo('12') >= 0) {
+  //     final intent = AndroidIntent(
+  //       action: 'android.settings.REQUEST_SCHEDULE_EXACT_ALARM',
+  //     );
+  //     await intent.launch();
+  //   }
+  // }
 
   static final List<String> _messages = [
     "오늘도 건강 잘 챙기고 계시네요 😊",

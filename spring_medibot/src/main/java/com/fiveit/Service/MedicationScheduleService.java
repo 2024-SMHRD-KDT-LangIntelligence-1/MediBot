@@ -15,10 +15,12 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 // import java.util.Optional;
 import java.util.Map;
+import java.time.Duration;
 
 @Service
 public class MedicationScheduleService {
@@ -151,5 +153,40 @@ public class MedicationScheduleService {
         }
 
         medicationScheduleRepository.saveAll(schedules);
+    }
+
+    public List<Map<String, Object>> analyzeMedicationPattern(String userId) {
+        List<MedicationSchedule> schedules = medicationScheduleRepository.findByUserId(userId);
+
+        List<Map<String, Object>> result = new ArrayList<>();
+
+        for (MedicationSchedule schedule : schedules) {
+            Map<String, Object> map = new HashMap<>();
+            map.put("date", schedule.getTmDate());
+            map.put("time", schedule.getTmTime().toString());
+            map.put("mediName", schedule.getMediName()); // ✅ 약 이름 추가
+
+            if (schedule.getRealTmAt() == null) {
+                map.put("realTime", null);
+                map.put("delay", -1);
+                map.put("status", "미복용");
+            } else {
+                long delayMinutes = Duration.between(schedule.getTmTime(), schedule.getRealTmAt()).toMinutes();
+                map.put("realTime", schedule.getRealTmAt().toString());
+                map.put("delay", delayMinutes);
+
+                String status;
+                if (delayMinutes >= -10 && delayMinutes <= 10) {
+                    status = "정상";
+                } else if (Math.abs(delayMinutes) <= 30) {
+                    status = "지연";
+                } else {
+                    status = "심각";
+                }
+                map.put("status", status);
+            }
+            result.add(map);
+        }
+        return result;
     }
 }

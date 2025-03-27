@@ -5,6 +5,8 @@ import 'package:medibot/screens/medication_registration_screen.dart';
 import 'package:medibot/services/api_service.dart';
 import 'package:intl/intl.dart';
 import 'package:medibot/screens/drug_search_screen.dart';
+import 'dart:convert';
+import 'package:medibot/screens/pattern_analysis_screen.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -14,12 +16,103 @@ class MainScreen extends StatefulWidget {
 }
 
 class _MainScreenState extends State<MainScreen> {
+  String summaryMessage = '';
   List<Map<String, dynamic>> todayMeds = [];
+  List<Map<String, dynamic>> patternResult = [];
+  Set<String> expandedDates = {};
+  int avgDelay = 0;
+  String mostCommonTime = '';
+  bool isRefreshing = false;
+  List<int> weekdayCount = [];
+  int predictedSuccessRate = 0;
 
   @override
   void initState() {
     super.initState();
     _loadTodayMeds();
+    _loadPatternAnalysis(); // 추가
+  }
+
+  Future<void> _loadPatternAnalysis() async {
+    try {
+      final resultList = await ApiService.getPatternAnalysis();
+      print("📦 패턴 분석 응답 샘플: ${jsonEncode(resultList.take(1).toList())}");
+      setState(() {
+        final now = DateTime.now();
+        final oneWeekAgo = now.subtract(Duration(days: 7));
+        final List<Map<String, dynamic>> filtered = [];
+
+        for (var entry in resultList) {
+          final dateStr = entry['date'] ?? '';
+          try {
+            final date = DateTime.parse(dateStr);
+            if (date.isAfter(oneWeekAgo) &&
+                date.isBefore(now.add(Duration(days: 1)))) {
+              filtered.add({
+                ...entry,
+                'name': entry['mediName'] ?? entry['name'] ?? '-',
+              });
+            }
+          } catch (_) {
+            continue;
+          }
+        }
+
+        filtered.sort((a, b) => (a['date'] ?? '').compareTo(b['date'] ?? ''));
+        patternResult = filtered;
+
+        // 📅 요일별 복약 횟수 계산
+        weekdayCount = List.filled(7, 0);
+        for (var entry in patternResult) {
+          try {
+            final date = DateTime.parse(entry['date']);
+            if ((entry['status'] ?? '') == '정상') {
+              weekdayCount[date.weekday % 7] += 1;
+            }
+          } catch (_) {}
+        }
+
+        // 💡 요약 메시지 생성
+        final total = patternResult.length;
+        final taken = patternResult.where((e) => e['status'] == '정상').length;
+        final percent = total == 0 ? 0 : (taken / total * 100).round();
+        summaryMessage =
+            "총 ${patternResult.length}회 중 $taken회 복약 성공! ($percent%) 평균 지연: ${avgDelay}분";
+
+        // 🔮 다음 주 예측 간단히 모델링
+        predictedSuccessRate = percent;
+
+        final validDelays =
+            patternResult
+                .where((e) => (e['delay'] ?? -1) != -1)
+                .map((e) => e['delay'] as int)
+                .toList();
+        avgDelay =
+            validDelays.isEmpty
+                ? 0
+                : (validDelays.reduce((a, b) => a + b) / validDelays.length)
+                    .round();
+
+        final timeCount = <String, int>{};
+        for (var entry in patternResult) {
+          final time = entry['time'];
+          if (time != null) {
+            timeCount[time] = (timeCount[time] ?? 0) + 1;
+          }
+        }
+        mostCommonTime =
+            timeCount.isNotEmpty
+                ? (timeCount.entries.reduce(
+                  (a, b) => a.value > b.value ? a : b,
+                )).key
+                : "없음";
+      });
+    } catch (e) {
+      print("🚨 패턴 분석 실패: $e");
+      setState(() {
+        patternResult = [];
+      });
+    }
   }
 
   Future<void> _loadTodayMeds() async {
@@ -127,6 +220,19 @@ class _MainScreenState extends State<MainScreen> {
                       context,
                       MaterialPageRoute(
                         builder: (_) => const DrugSearchScreen(),
+                      ),
+                    );
+                  },
+                ),
+                _buildIconButton(
+                  context,
+                  icon: Icons.analytics_outlined,
+                  label: "복약 분석",
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const PatternAnalysisScreen(),
                       ),
                     );
                   },
@@ -271,24 +377,6 @@ class _MainScreenState extends State<MainScreen> {
                       }).toList(),
                 ),
             const SizedBox(height: 30),
-            const Text(
-              "복약 패턴분석",
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-            ),
-            const SizedBox(height: 12),
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: const Text(
-                "",
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
           ],
         ),
       ),
@@ -314,5 +402,34 @@ class _MainScreenState extends State<MainScreen> {
         ],
       ),
     );
+  }
+
+  Widget _buildStatRow(String label, int count, Color color) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            label,
+            style: TextStyle(color: color, fontWeight: FontWeight.bold),
+          ),
+          Text("$count회", style: TextStyle(color: color)),
+        ],
+      ),
+    );
+  }
+
+  Color _getStatusColor(String? status) {
+    switch (status) {
+      case '정상':
+        return Colors.green;
+      case '주의':
+        return Colors.orange;
+      case '심각':
+        return Colors.red;
+      default:
+        return Colors.grey;
+    }
   }
 }
