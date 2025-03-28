@@ -81,9 +81,16 @@ class _MedicationRecordScreenState extends State<MedicationRecordScreen> {
   }
 
   Future<void> _scheduleMedicationNotifications() async {
+    final Set<String> scheduledMeds = {}; // ✅ 중복 제거용
+
     _medicationsByTime.forEach((time, meds) {
-      meds.forEach((med) {
+      for (var med in meds) {
         String medName = med["name"];
+        String key = "$medName|$time"; // 🔑 약 + 시간으로 유니크 키 구성
+
+        if (scheduledMeds.contains(key)) continue; // ✅ 중복이면 스킵
+        scheduledMeds.add(key);
+
         DateTime medTime = DateFormat("HH:mm:ss").parse(time);
         DateTime now = DateTime.now();
 
@@ -100,11 +107,11 @@ class _MedicationRecordScreenState extends State<MedicationRecordScreen> {
         }
 
         NotificationService.scheduleMedicationNotification(
-          med.hashCode,
+          key.hashCode, // ✅ 안정적인 고유 ID
           medName,
           scheduleTime,
         );
-      });
+      }
     });
   }
 
@@ -208,33 +215,46 @@ class _MedicationRecordScreenState extends State<MedicationRecordScreen> {
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(10),
                               ),
-                              leading: GestureDetector(
-                                onTap: () async {
-                                  bool newValue = !(med["taken"] ?? false);
-                                  String formattedDate = DateFormat(
-                                    'yyyy-MM-dd',
-                                  ).format(_selectedDay);
+                              leading:
+                                  _selectedDay.day == DateTime.now().day &&
+                                          _selectedDay.month ==
+                                              DateTime.now().month &&
+                                          _selectedDay.year ==
+                                              DateTime.now().year
+                                      ? GestureDetector(
+                                        onTap: () async {
+                                          bool newValue =
+                                              !(med["taken"] ?? false);
+                                          String formattedDate = DateFormat(
+                                            'yyyy-MM-dd',
+                                          ).format(_selectedDay);
 
-                                  setState(() {
-                                    med["taken"] = newValue;
-                                  });
+                                          setState(() {
+                                            med["taken"] = newValue;
+                                          });
 
-                                  await _updateMedicationStatus(
-                                    med["name"],
-                                    newValue,
-                                    formattedDate,
-                                  );
-                                },
-                                child: Icon(
-                                  med["taken"] ?? false
-                                      ? Icons.check_circle
-                                      : Icons.radio_button_unchecked,
-                                  color:
-                                      med["taken"] ?? false
-                                          ? Colors.blueAccent
-                                          : Colors.grey.shade500,
-                                ),
-                              ),
+                                          await _updateMedicationStatus(
+                                            med["name"],
+                                            newValue,
+                                            formattedDate,
+                                          );
+                                        },
+                                        child: Icon(
+                                          med["taken"] ?? false
+                                              ? Icons.check_circle
+                                              : Icons.radio_button_unchecked,
+                                          color:
+                                              med["taken"] ?? false
+                                                  ? Colors.blueAccent
+                                                  : Colors.grey.shade500,
+                                        ),
+                                      )
+                                      : Icon(
+                                        med["taken"] ?? false
+                                            ? Icons.check_circle
+                                            : Icons.radio_button_unchecked,
+                                        color: Colors.grey.shade300,
+                                      ),
                               title: Row(
                                 children: [
                                   const Icon(
@@ -416,16 +436,16 @@ class _MedicationRecordScreenState extends State<MedicationRecordScreen> {
     try {
       await ApiService.updateMedicationStatus(medName, taken, tmDate);
 
-      // ✅ UI 즉시 업데이트
-      // setState(() {
-      //   _medicationsByTime.forEach((time, meds) {
-      //     for (var med in meds) {
-      //       if (med["name"] == medName) {
-      //         med["taken"] = taken;
-      //       }
-      //     }
-      //   });
-      // });
+      // ✅ UI 즉시 업데이트 using medication name and time
+      setState(() {
+        _medicationsByTime.forEach((medTime, meds) {
+          for (var med in meds) {
+            if (med["name"] == medName && medTime == tmDate.split(' ')[1]) {
+              med["taken"] = taken;
+            }
+          }
+        });
+      });
 
       // ✅ API 반영 후 다시 로드 (데이터 갱신)
       await _fetchMedicationRecords();

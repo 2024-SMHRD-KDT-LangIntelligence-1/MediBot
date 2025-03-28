@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:medibot/screens/ChatBotScreen.dart';
 import 'package:medibot/screens/NearbyMapScreen.dart';
+import 'package:medibot/screens/home_screen.dart';
 import 'package:medibot/screens/medication_registration_screen.dart';
 import 'package:medibot/services/api_service.dart';
 import 'package:intl/intl.dart';
 import 'package:medibot/screens/drug_search_screen.dart';
 import 'dart:convert';
 import 'package:medibot/screens/pattern_analysis_screen.dart';
+import 'package:medibot/screens/medication_schedule.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -311,67 +313,75 @@ class _MainScreenState extends State<MainScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children:
                       todayMeds.map((med) {
-                        return Container(
-                          margin: const EdgeInsets.symmetric(vertical: 6),
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 14,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(14),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.05),
-                                blurRadius: 6,
-                                offset: const Offset(0, 3),
-                              ),
-                            ],
-                          ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Row(
-                                children: [
-                                  Icon(
-                                    med['taken']
-                                        ? Icons.check_circle
-                                        : Icons.schedule,
-                                    color:
-                                        med['taken']
-                                            ? Colors.green
-                                            : Colors.indigoAccent,
-                                  ),
-                                  const SizedBox(width: 12),
-                                  Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        med['name'],
-                                        style: const TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 16,
+                        return GestureDetector(
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(builder: (_) => HomeScreen()),
+                            );
+                          },
+                          child: Container(
+                            margin: const EdgeInsets.symmetric(vertical: 6),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 14,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(14),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.05),
+                                  blurRadius: 6,
+                                  offset: const Offset(0, 3),
+                                ),
+                              ],
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Row(
+                                  children: [
+                                    Icon(
+                                      med['taken']
+                                          ? Icons.check_circle
+                                          : Icons.schedule,
+                                      color:
+                                          med['taken']
+                                              ? Colors.green
+                                              : Colors.indigoAccent,
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          med['name'],
+                                          style: const TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 16,
+                                          ),
                                         ),
-                                      ),
-                                      const SizedBox(height: 4),
-                                      Text(
-                                        "복용 시간: ${med['time']}",
-                                        style: const TextStyle(
-                                          fontSize: 13,
-                                          color: Colors.black54,
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          "복용 시간: ${med['time']}",
+                                          style: const TextStyle(
+                                            fontSize: 13,
+                                            color: Colors.black54,
+                                          ),
                                         ),
-                                      ),
-                                    ],
-                                  ),
-                                ],
-                              ),
-                              const Icon(
-                                Icons.arrow_forward_ios,
-                                size: 16,
-                                color: Colors.black38,
-                              ),
-                            ],
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                                const Icon(
+                                  Icons.arrow_forward_ios,
+                                  size: 16,
+                                  color: Colors.black38,
+                                ),
+                              ],
+                            ),
                           ),
                         );
                       }).toList(),

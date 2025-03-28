@@ -14,6 +14,7 @@ class _PatternAnalysisScreenState extends State<PatternAnalysisScreen> {
   int avgDelay = 0;
   String mostCommonTime = '';
   int predictedSuccessRate = 0;
+  String worstTime = '';
   String summaryMessage = '';
   Set<String> expandedDates = {};
   bool isRefreshing = false;
@@ -66,15 +67,13 @@ class _PatternAnalysisScreenState extends State<PatternAnalysisScreen> {
             );
 
     final weekdayCountList = List.filled(7, 0);
-    for (var entry in resultList) {
+    for (var entry in filtered) {
       try {
         final dateStr = entry['date'];
         if (dateStr == null) continue;
         final date = DateTime.parse(dateStr);
-        if ((entry['status'] ?? '') == '정상') {
-          final weekdayIndex = date.weekday % 7; // 일(0), 월(1), ..., 토(6)
-          weekdayCountList[weekdayIndex]++;
-        }
+        final weekdayIndex = date.weekday % 7; // 일(0), 월(1), ..., 토(6)
+        weekdayCountList[weekdayIndex]++;
       } catch (_) {
         continue;
       }
@@ -96,22 +95,42 @@ class _PatternAnalysisScreenState extends State<PatternAnalysisScreen> {
         filtered.length,
       );
       predictedSuccessRate = successRate;
+      // 유독 실패가 많았던 시간 계산
+      Map<String, int> failCountByTime = {};
+      for (var entry in resultList) {
+        final status = entry['status'];
+        if (status == '주의' || status == '심각') {
+          final time = entry['time'];
+          if (time != null) {
+            failCountByTime[time] = (failCountByTime[time] ?? 0) + 1;
+          }
+        }
+      }
+      String worst = '';
+      int maxFails = 0;
+      failCountByTime.forEach((key, value) {
+        if (value > maxFails) {
+          maxFails = value;
+          worst = key;
+        }
+      });
+      worstTime = worst;
     });
   }
 
   String _generateSummaryMessage(int delay, String commonTime, int count) {
     if (count <= 2) {
       return "아직 복약 데이터가 충분하지 않아요. 며칠 더 복용한 뒤 분석해볼게요!";
-    } else if (delay <= 3) {
-      return "거의 정해진 시간에 복약 중이에요. '$commonTime'쯤 잘 챙겨 드시고 있어요!";
-    } else if (delay <= 10) {
-      return "약간의 지연은 있지만 '$commonTime'쯤 복약하는 습관이 생기고 있어요.";
-    } else if (delay <= 20) {
-      return "복약 시간이 자주 밀리고 있어요. '$commonTime'쯤 알림을 설정해보세요.";
-    } else if (delay <= 30) {
-      return "복약 지연이 큰 편이에요. '$commonTime'에 맞춰 복약 루틴을 만들어보세요.";
+    } else if (delay.abs() <= 3) {
+      return "'$commonTime'에 매우 정시 복약 중이에요! 훌륭한 습관이에요 👏";
+    } else if (delay.abs() <= 7) {
+      return "'$commonTime' 전후로 꾸준히 복약 중이에요. 안정적인 루틴을 유지하고 있어요.";
+    } else if (delay.abs() <= 15) {
+      return "'$commonTime'쯤 복약하려고 노력 중이네요. 알림을 설정해보면 더 정확해질 수 있어요.";
+    } else if (delay.abs() <= 25) {
+      return "복약 시간이 조금 불규칙해요. '$commonTime'에 복약 루틴을 다시 맞춰보는 건 어때요?";
     } else {
-      return "복약 시간이 매우 불규칙해요. '$commonTime'쯤 알림을 꼭 설정하고, 규칙적인 습관을 만들어봐요!";
+      return "복약 시간이 많이 흔들리고 있어요. '$commonTime'쯤에 맞춰 규칙적인 습관을 만들어보세요.";
     }
   }
 
@@ -241,6 +260,11 @@ class _PatternAnalysisScreenState extends State<PatternAnalysisScreen> {
               ),
               const SizedBox(height: 6),
               Text(summaryMessage, style: const TextStyle(fontSize: 14)),
+              if (worstTime.isNotEmpty)
+                Text(
+                  "❗ 자주 놓치는 시간대: $worstTime",
+                  style: TextStyle(fontSize: 14, color: Colors.redAccent),
+                ),
               const SizedBox(height: 12),
               const Text(
                 "📅 요일별 복약 통계",

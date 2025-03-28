@@ -922,7 +922,13 @@ class MedicationSelectionScreen extends StatefulWidget {
 
 class _MedicationSelectionScreenState extends State<MedicationSelectionScreen> {
   bool get isMorning => widget.times[widget.currentIndex]['hour'] < 12;
-  List<String> medications = ["혈압약", "당뇨약", "고지혈약", "유산균", "영양제"];
+  List<String> medications = [
+    "고려은단 멀티비타민",
+    "더리얼 오메가3",
+    "종근당건강 락토핏 골드",
+    "더리얼 비타민D3",
+    "일양약품 액티브 마그네슘",
+  ];
   List<String> selectedMedications = []; // ✅ 여러 개의 약 저장 리스트
 
   void _toggleMedicationSelection(String medication) {

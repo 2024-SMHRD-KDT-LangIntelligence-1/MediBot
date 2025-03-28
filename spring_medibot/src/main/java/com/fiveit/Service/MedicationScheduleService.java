@@ -176,7 +176,7 @@ public class MedicationScheduleService {
                 map.put("delay", delayMinutes);
 
                 String status;
-                if (delayMinutes >= -10 && delayMinutes <= 10) {
+                if (delayMinutes >= -20 && delayMinutes <= 20) {
                     status = "정상";
                 } else if (Math.abs(delayMinutes) <= 30) {
                     status = "지연";
