@@ -2,15 +2,15 @@
   <img src="https://img.icons8.com/fluency/96/pill.png" width="80" />
 </p>
 
-<h1 align="center">💊 MediMate</h1>
+<h1 align="center">💊 MediBot</h1>
 <p align="center">당신의 건강한 습관을 책임지는 스마트 복약 도우미</p>
 
 <p align="center">
   <img src="https://img.shields.io/badge/Flutter-3.19-blue?logo=flutter&logoColor=white" />
   <img src="https://img.shields.io/badge/Spring Boot-3.2.5-green?logo=spring&logoColor=white" />
-  <img src="https://img.shields.io/badge/OCR-Tesseract / ML Kit-yellow?logo=google&logoColor=black" />
+  <img src="https://img.shields.io/badge/NCP OCR-yellow?logo=naver&logoColor=black" />
   <img src="https://img.shields.io/badge/Kakao Map-API-orange?logo=kakao&logoColor=white" />
-  <img src="https://img.shields.io/badge/AI 챗봇-약 질문 가능-critical?logo=openai&logoColor=white" />
+  <img src="https://img.shields.io/badge/AI 챗봇-약 질문 가능-critical?logo=meta&logoColor=white" />
 </p>
 
 ---
