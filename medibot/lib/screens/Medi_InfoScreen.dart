@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../services/api_service.dart';
+import 'package:medibot/screens/side_effects_screen.dart';
 
 class Medi_InfoScreen extends StatefulWidget {
   final String medName;
@@ -18,6 +20,7 @@ class Medi_InfoScreen extends StatefulWidget {
 class _Medi_InfoScreenState extends State<Medi_InfoScreen> {
   Future<DrugInfo?>? _drugInfoFuture;
   Future<Map<String, String>>? _dateRangeFuture;
+  Future<List<String>>? _userNoteFuture;
 
   @override
   void initState() {
@@ -27,6 +30,18 @@ class _Medi_InfoScreenState extends State<Medi_InfoScreen> {
       widget.medName,
       widget.tmTime,
     );
+    _userNoteFuture = _loadUserNote();
+  }
+
+  Future<List<String>> _loadUserNote() async {
+    final prefs = await SharedPreferences.getInstance();
+    final key = 'note_${widget.medName}';
+    final raw = prefs.get(key);
+    if (raw is String) {
+      await prefs.remove(key); // 기존 잘못된 값 제거
+      return [];
+    }
+    return prefs.getStringList(key) ?? [];
   }
 
   @override
@@ -68,140 +83,211 @@ class _Medi_InfoScreenState extends State<Medi_InfoScreen> {
 
           return Padding(
             padding: const EdgeInsets.all(20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // ⚠️ 부작용 주의 배지
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.orange.shade300,
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: const Text(
-                    "⚠️ 부작용 주의",
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
+            child: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // ⚠️ 부작용 주의 배지
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.orange.shade300,
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: const Text(
+                      "⚠️ 부작용 주의",
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
-                ),
-                const SizedBox(height: 16),
+                  const SizedBox(height: 16),
 
-                // 약 이름
-                Text(
-                  widget.medName,
-                  style: const TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.w700,
+                  // 약 이름
+                  Text(
+                    widget.medName,
+                    style: const TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
-                ),
 
-                const SizedBox(height: 12),
+                  const SizedBox(height: 12),
 
-                // 📅 복용일자
-                FutureBuilder<Map<String, String>>(
-                  future: _dateRangeFuture,
-                  builder: (context, snapshot) {
-                    if (snapshot.connectionState == ConnectionState.waiting) {
-                      return const Text("복용일자 불러오는 중...");
-                    }
-                    if (!snapshot.hasData || snapshot.data == null) {
-                      return const Text("복용일자 정보 없음");
-                    }
-                    final start = snapshot.data!["startDate"];
-                    final end = snapshot.data!["endDate"];
-                    return Text(
-                      "$start ~ $end",
-                      style: const TextStyle(fontSize: 15, color: Colors.grey),
-                    );
-                  },
-                ),
-
-                const SizedBox(height: 24),
-
-                // 💊 부작용 섹션
-                const Text(
-                  "부작용",
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 12),
-
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    vertical: 16,
-                    horizontal: 16,
+                  // 📅 복용일자
+                  FutureBuilder<Map<String, String>>(
+                    future: _dateRangeFuture,
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return const Text("복용일자 불러오는 중...");
+                      }
+                      if (!snapshot.hasData || snapshot.data == null) {
+                        return const Text("복용일자 정보 없음");
+                      }
+                      final start = snapshot.data!["startDate"];
+                      final end = snapshot.data!["endDate"];
+                      return Text(
+                        "$start ~ $end",
+                        style: const TextStyle(
+                          fontSize: 15,
+                          color: Colors.grey,
+                        ),
+                      );
+                    },
                   ),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child:
-                      sideEffects.isEmpty
-                          ? const Text("등록된 부작용 정보가 없습니다.")
-                          : Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: List.generate(
-                              sideEffects.length,
-                              (index) => _SideEffectRow(
-                                rank: "${index + 1}위",
-                                text: sideEffects[index],
-                              ),
-                            ),
-                          ),
-                ),
 
-                // 💊 상호작용 주의사항
-                if (drug.mediInter != null &&
-                    drug.mediInter!.trim().isNotEmpty) ...[
                   const SizedBox(height: 24),
+
+                  // 💊 부작용 섹션
                   const Text(
-                    "상호작용 주의사항",
+                    "부작용",
                     style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 12),
+
                   Container(
-                    padding: const EdgeInsets.all(16),
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 16,
+                      horizontal: 16,
+                    ),
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(16),
                     ),
-                    child: Text(
-                      drug.mediInter!,
-                      style: const TextStyle(
-                        fontSize: 15,
-                        height: 1.4,
-                        fontFamily: 'AppleSDGothicNeo',
+                    child:
+                        sideEffects.isEmpty
+                            ? const Text("등록된 부작용 정보가 없습니다.")
+                            : Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: List.generate(
+                                sideEffects.length,
+                                (index) => _SideEffectRow(
+                                  rank: "${index + 1}위",
+                                  text: sideEffects[index],
+                                ),
+                              ),
+                            ),
+                  ),
+
+                  // 💊 상호작용 주의사항
+                  if (drug.mediInter != null &&
+                      drug.mediInter!.trim().isNotEmpty) ...[
+                    const SizedBox(height: 24),
+                    const Text(
+                      "상호작용 주의사항",
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: Text(
+                        drug.mediInter!,
+                        style: const TextStyle(
+                          fontSize: 15,
+                          height: 1.4,
+                          fontFamily: 'AppleSDGothicNeo',
+                        ),
+                      ),
+                    ),
+                  ],
+                  const SizedBox(height: 24),
+                  FutureBuilder<List<String>>(
+                    future: _userNoteFuture,
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return const SizedBox();
+                      }
+                      final notes = snapshot.data ?? [];
+                      if (notes.isEmpty) {
+                        return const SizedBox();
+                      }
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            "내가 작성한 부작용 메모",
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          Column(
+                            children:
+                                notes
+                                    .map(
+                                      (note) => Container(
+                                        width: double.infinity,
+                                        margin: const EdgeInsets.only(
+                                          bottom: 8,
+                                        ),
+                                        padding: const EdgeInsets.all(16),
+                                        decoration: BoxDecoration(
+                                          color: Colors.white,
+                                          borderRadius: BorderRadius.circular(
+                                            16,
+                                          ),
+                                        ),
+                                        child: Text(
+                                          note,
+                                          style: const TextStyle(fontSize: 15),
+                                        ),
+                                      ),
+                                    )
+                                    .toList(),
+                          ),
+                        ],
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 80), // 저장 버튼 공간 확보
+
+                  SizedBox(
+                    width: double.infinity,
+                    height: 50,
+                    child: ElevatedButton(
+                      onPressed: () async {
+                        // TODO: 부작용 등록 화면 이동
+                        final result = await Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder:
+                                (context) => SideEffectRegisterScreen(
+                                  medName: widget.medName,
+                                ),
+                          ),
+                        );
+                        if (result == true) {
+                          setState(() {
+                            _userNoteFuture = _loadUserNote();
+                          });
+                        }
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.indigoAccent,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: const Text(
+                        "내 부작용 등록하기",
+                        style: TextStyle(fontSize: 16, color: Colors.white),
                       ),
                     ),
                   ),
                 ],
-                // 등록 버튼
-                const Spacer(),
-
-                SizedBox(
-                  width: double.infinity,
-                  height: 50,
-                  child: ElevatedButton(
-                    onPressed: () {
-                      // TODO: 부작용 등록 화면 이동
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.indigoAccent,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                    child: const Text(
-                      "내 부작용 등록하기",
-                      style: TextStyle(fontSize: 16, color: Colors.white),
-                    ),
-                  ),
-                ),
-              ],
+              ),
             ),
           );
         },

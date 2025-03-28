@@ -8,7 +8,7 @@
 <p align="center">
   <img src="https://img.shields.io/badge/Flutter-3.19-blue?logo=flutter&logoColor=white" />
   <img src="https://img.shields.io/badge/Spring Boot-3.2.5-green?logo=spring&logoColor=white" />
-  <img src="https://img.shields.io/badge/NCP OCR-yellow?logo=naver&logoColor=black" />
+  <img src="https://img.shields.io/badge/NCP OCR-yellow?logo=naver&logoColor=green" />
   <img src="https://img.shields.io/badge/Kakao Map-API-orange?logo=kakao&logoColor=white" />
   <img src="https://img.shields.io/badge/AI 챗봇-약 질문 가능-critical?logo=meta&logoColor=white" />
 </p>
