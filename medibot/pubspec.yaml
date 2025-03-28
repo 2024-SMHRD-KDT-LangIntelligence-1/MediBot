@@ -23,6 +23,8 @@ dependencies:
   geolocator: ^10.1.0
   android_intent_plus: ^5.3.0
   fl_chart: ^0.64.0
+  flutter_launcher_icons: ^0.13.1
+
   
 
 dev_dependencies:
@@ -41,3 +43,8 @@ flutter:
     - assets/mediIcon.jpg
     - assets/Icon.jpg
     - assets/pill.png
+
+flutter_icons:
+  android: true
+  ios: true 
+  image_path: "assets/logo.png"
