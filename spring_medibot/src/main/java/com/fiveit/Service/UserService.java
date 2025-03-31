@@ -63,7 +63,7 @@ public class UserService {
         return null; // ❌ 인증 실패 시 null 반환
     }
 
-    public boolean checkEmailExists(String userId) {
+    public boolean isUserIdDuplicate(String userId) {
         return userRepository.findByUserId(userId).isPresent();
     }
 }

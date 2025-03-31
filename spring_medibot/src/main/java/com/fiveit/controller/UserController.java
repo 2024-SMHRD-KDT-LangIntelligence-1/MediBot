@@ -7,6 +7,8 @@ import com.fiveit.Service.UserService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Map;
+
 @RestController
 @RequestMapping("/api/auth")
 public class UserController {
@@ -28,10 +30,10 @@ public class UserController {
     }
 
     // 이메일 중복 확인 API
-    @GetMapping("/check-email")
-    public ResponseEntity<Boolean> checkEmail(@RequestParam String userId) {
-        boolean exists = userService.checkEmailExists(userId);
-        return ResponseEntity.ok(exists);
+    @GetMapping("/check-duplicate")
+    public ResponseEntity<?> checkDuplicate(@RequestParam String userId) {
+        boolean isDuplicate = userService.isUserIdDuplicate(userId);
+        return ResponseEntity.ok().body(Map.of("duplicate", isDuplicate));
     }
 
     @PostMapping("/login")

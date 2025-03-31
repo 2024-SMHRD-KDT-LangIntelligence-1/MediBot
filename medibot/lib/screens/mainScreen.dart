@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:medibot/screens/ChatBotScreen.dart';
 import 'package:medibot/screens/NearbyMapScreen.dart';
 import 'package:medibot/screens/home_screen.dart';
@@ -27,12 +29,21 @@ class _MainScreenState extends State<MainScreen> {
   bool isRefreshing = false;
   List<int> weekdayCount = [];
   int predictedSuccessRate = 0;
+  bool isLoggedIn = false;
 
   @override
   void initState() {
     super.initState();
     _loadTodayMeds();
     _loadPatternAnalysis(); // 추가
+    _checkLoginStatus();
+  }
+
+  void _checkLoginStatus() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      isLoggedIn = prefs.getBool("isLoggedIn") ?? false;
+    });
   }
 
   Future<void> _loadPatternAnalysis() async {
@@ -400,7 +411,28 @@ class _MainScreenState extends State<MainScreen> {
     required VoidCallback onTap,
   }) {
     return GestureDetector(
-      onTap: onTap,
+      onTap: () {
+        if (!isLoggedIn) {
+          showDialog(
+            context: context,
+            builder:
+                (context) => CupertinoAlertDialog(
+                  title: Text("로그인이 필요합니다"),
+                  content: Text("이 기능을 사용하려면 로그인이 필요해요."),
+                  actions: [
+                    CupertinoDialogAction(
+                      onPressed: () => Navigator.of(context).pop(),
+                      isDefaultAction: true,
+                      textStyle: const TextStyle(color: Colors.indigoAccent),
+                      child: const Text("확인"),
+                    ),
+                  ],
+                ),
+          );
+        } else {
+          onTap();
+        }
+      },
       child: Column(
         children: [
           CircleAvatar(

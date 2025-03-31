@@ -6,7 +6,7 @@ import 'package:http/http.dart' as http;
 
 class ApiService {
   // static const String baseUrl = "http://localhost:9090";
-  static const String baseUrl = "http://192.168.219.205:9090";
+  static const String baseUrl = "http://192.168.219.162:9090";
 
   static String convertGenderToEnum(String gender) {
     if (gender == "남성") return "M";
@@ -120,6 +120,20 @@ class ApiService {
       return response.body; // ✅ 성공 시 userId 반환
     } else {
       throw Exception("로그인 실패: ${response.body}");
+    }
+  }
+
+  static Future<bool> checkEmailDuplicate(String email) async {
+    final response = await http.get(
+      Uri.parse('$baseUrl/api/auth/check-duplicate?userId=$email'),
+      headers: {"Content-Type": "application/json"},
+    );
+
+    if (response.statusCode == 200) {
+      final decoded = jsonDecode(response.body);
+      return decoded['duplicate'] == true;
+    } else {
+      throw Exception("이메일 중복 확인 실패: ${response.body}");
     }
   }
 

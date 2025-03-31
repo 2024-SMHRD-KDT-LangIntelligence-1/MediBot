@@ -108,26 +108,26 @@ class _SignUpScreenState extends State<SignUpScreen> {
   DateTime? _selectedBirthDate; // ✅ 생년월일 저장 변수
 
   // /// ✅ 이메일 중복 확인
-  // void _checkIdDuplicate() async {
-  //   try {
-  //     bool isDuplicate = await ApiService.checkEmailDuplicate(
-  //       _idController.text,
-  //     );
-  //     setState(() {
-  //       _isIdChecked = !isDuplicate;
-  //     });
+  void _checkIdDuplicate() async {
+    try {
+      bool isDuplicate = await ApiService.checkEmailDuplicate(
+        _idController.text,
+      );
+      setState(() {
+        _isIdChecked = !isDuplicate;
+      });
 
-  //     ScaffoldMessenger.of(context).showSnackBar(
-  //       SnackBar(
-  //         content: Text(isDuplicate ? "이미 사용 중인 이메일입니다." : "사용 가능한 이메일입니다!"),
-  //       ),
-  //     );
-  //   } catch (e) {
-  //     ScaffoldMessenger.of(
-  //       context,
-  //     ).showSnackBar(SnackBar(content: Text("이메일 중복 확인 실패: $e")));
-  //   }
-  // }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(isDuplicate ? "이미 사용 중인 이메일입니다." : "사용 가능한 이메일입니다!"),
+        ),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text("이메일 중복 확인 실패: $e")));
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -171,10 +171,11 @@ class _SignUpScreenState extends State<SignUpScreen> {
                 SizedBox(width: 10),
                 ElevatedButton(
                   onPressed: () {
-                    // _checkIdDuplicate();
+                    _checkIdDuplicate();
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: kPrimaryColor,
+                    foregroundColor: Colors.white,
                   ),
                   child: Text("중복확인"),
                 ),
@@ -221,23 +222,24 @@ class _SignUpScreenState extends State<SignUpScreen> {
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
-                onPressed: () {
-                  // ✅ 회원 정보를 저장한 후 IntroScreen으로 이동
-                  StorageManager().saveUserInfo(
-                    _nameController.text,
-                    _idController.text,
-                    _passwordController.text,
-                    "${_selectedBirthDate!.year}-${_selectedBirthDate!.month.toString().padLeft(2, '0')}-${_selectedBirthDate!.day.toString().padLeft(2, '0')}",
-                  );
-
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => IntroScreen()),
-                  );
-                },
+                onPressed:
+                    _isIdChecked
+                        ? () {
+                          StorageManager().saveUserInfo(
+                            _nameController.text,
+                            _idController.text,
+                            _passwordController.text,
+                            "${_selectedBirthDate!.year}-${_selectedBirthDate!.month.toString().padLeft(2, '0')}-${_selectedBirthDate!.day.toString().padLeft(2, '0')}",
+                          );
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (_) => IntroScreen()),
+                          );
+                        }
+                        : null,
                 style: ElevatedButton.styleFrom(backgroundColor: kPrimaryColor),
                 child: Text(
-                  "다음", // ✅ "회원가입" → "다음"으로 변경
+                  "다음",
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
               ),

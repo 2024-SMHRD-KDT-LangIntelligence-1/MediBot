@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart'; // 추가: Cupertino 패키지 임포트
 import 'widgets/bottom_bar.dart'; // 하단 네비게이션 바 추가
 import 'package:medibot/services/NotificationService.dart'; // 🔥 알림 서비스 추가
 import 'package:kakao_map_plugin/kakao_map_plugin.dart';
@@ -23,4 +24,31 @@ class MyApp extends StatelessWidget {
       home: const BottomNavBar(), // 네비게이션 바 적용
     );
   }
+}
+
+// 예시: _buildIconButton 함수
+Widget _buildIconButton(BuildContext context, bool isLoggedIn, Function onTap) {
+  return GestureDetector(
+    onTap: () {
+      if (!isLoggedIn) {
+        showDialog(
+          context: context,
+          builder:
+              (context) => CupertinoAlertDialog(
+                title: Text("로그인이 필요합니다"),
+                content: Text("이 기능을 사용하려면 로그인이 필요해요."),
+                actions: [
+                  CupertinoDialogAction(
+                    child: Text("확인"),
+                    onPressed: () => Navigator.of(context).pop(),
+                  ),
+                ],
+              ),
+        );
+      } else {
+        onTap();
+      }
+    },
+    child: Icon(Icons.alternate_email), // 아이콘 추가
+  );
 }

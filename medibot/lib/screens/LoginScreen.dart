@@ -30,6 +30,7 @@ class _LoginScreenState extends State<LoginScreen> {
     bool isLoggedIn = prefs.getBool("isLoggedIn") ?? false;
 
     if (isLoggedIn) {
+      if (!mounted) return;
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(builder: (context) => BottomNavBar()),
       );
