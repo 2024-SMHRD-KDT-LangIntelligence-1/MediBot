@@ -42,7 +42,7 @@ class _MainScreenState extends State<MainScreen> {
   void _checkLoginStatus() async {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
-      isLoggedIn = prefs.getBool("isLoggedIn") ?? false;
+      isLoggedIn = prefs.getBool("isLoggedIn")!;
     });
   }
 
@@ -147,19 +147,30 @@ class _MainScreenState extends State<MainScreen> {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        title: const Text(
-          "MediBot",
-          style: TextStyle(
-            color: Colors.indigoAccent,
-            fontWeight: FontWeight.bold,
-          ),
+        title: Row(
+          children: [
+            const Text(
+              "MediBot",
+              style: TextStyle(
+                color: Colors.indigoAccent,
+                fontWeight: FontWeight.bold,
+                fontSize: 20,
+              ),
+            ),
+            const SizedBox(width: 4),
+
+            Image.asset(
+              'assets/logo.png', // 로고 파일 경로
+              height: 28,
+            ),
+          ],
         ),
-        actions: const [
-          Padding(
-            padding: EdgeInsets.only(right: 16.0),
-            child: Icon(Icons.notifications_none, color: Colors.black),
-          ),
-        ],
+        // actions: const [
+        //   Padding(
+        //     padding: EdgeInsets.only(right: 16.0),
+        //     child: Icon(Icons.notifications_none, color: Colors.black),
+        //   ),
+        // ],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -173,7 +184,8 @@ class _MainScreenState extends State<MainScreen> {
               children: [
                 _buildIconButton(
                   context,
-                  icon: Icons.smart_toy_outlined,
+                  // icon: null,
+                  imageAsset: 'assets/logo_face_white.png', // 로고 이미지 경로
                   label: "챗봇",
                   onTap:
                       () => showModalBottomSheet(
@@ -406,12 +418,14 @@ class _MainScreenState extends State<MainScreen> {
 
   Widget _buildIconButton(
     BuildContext context, {
-    required IconData icon,
+    IconData? icon,
+    String? imageAsset,
     required String label,
     required VoidCallback onTap,
   }) {
     return GestureDetector(
       onTap: () {
+        print("🔥 로그인 여부: $isLoggedIn");
         if (!isLoggedIn) {
           showDialog(
             context: context,
@@ -432,12 +446,17 @@ class _MainScreenState extends State<MainScreen> {
         } else {
           onTap();
         }
+        // onTap();
       },
       child: Column(
         children: [
           CircleAvatar(
+            radius: 26,
             backgroundColor: Colors.indigoAccent,
-            child: Icon(icon, color: Colors.white),
+            child:
+                imageAsset != null
+                    ? Image.asset(imageAsset, width: 35, height: 35)
+                    : Icon(icon, color: Colors.white),
           ),
           const SizedBox(height: 8),
           Text(label),

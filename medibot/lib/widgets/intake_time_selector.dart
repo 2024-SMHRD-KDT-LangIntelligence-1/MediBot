@@ -159,10 +159,7 @@ class _IntakeTimeSelectorState extends State<IntakeTimeSelector> {
                         ),
                       ),
                       trailing: IconButton(
-                        icon: const Icon(
-                          CupertinoIcons.minus_circle_fill,
-                          color: Colors.redAccent,
-                        ),
+                        icon: const Icon(Icons.close, color: Colors.redAccent),
                         onPressed: () => _removeTime(index),
                       ),
                     ),

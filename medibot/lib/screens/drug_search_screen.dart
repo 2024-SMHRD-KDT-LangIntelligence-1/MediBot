@@ -19,8 +19,8 @@ class _DrugSearchScreenState extends State<DrugSearchScreen> {
       appBar: AppBar(
         title: const Text("약 검색"),
         centerTitle: true,
-        backgroundColor: Colors.indigoAccent,
-        foregroundColor: Colors.white,
+        backgroundColor: Colors.white,
+        foregroundColor: Colors.black, // ← 추가
       ),
       body: Padding(
         padding: const EdgeInsets.all(20),
@@ -108,12 +108,12 @@ class _DrugSearchScreenState extends State<DrugSearchScreen> {
             const SizedBox(height: 24),
             const Text(
               "검색 결과는 선택 후 상세보기로 연결됩니다.",
-              style: TextStyle(color: Colors.grey),
+              style: TextStyle(color: Colors.indigoAccent),
             ),
           ],
         ),
       ),
-      backgroundColor: const Color(0xFFF3F6F9),
+      backgroundColor: Colors.white,
     );
   }
 }

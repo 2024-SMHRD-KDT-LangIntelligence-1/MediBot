@@ -109,18 +109,25 @@ class _ChatBotScreenState extends State<ChatBotScreen> {
                         Icon(Icons.bolt, color: Colors.yellowAccent, size: 18),
                       ],
                     ),
+
                     Text(
-                      "보통 몇 분 내에 응답합니다.",
-                      style: TextStyle(fontSize: 12, color: Colors.white70),
+                      "MediBot의 답변은 정확하지 않을 수 있습니다.",
+                      style: TextStyle(fontSize: 10, color: Colors.white70),
+                    ),
+                    Text(
+                      "정확한 복약 정보는 반드시 전문가의 지침을 따라주세요.",
+                      style: TextStyle(fontSize: 10, color: Colors.white70),
                     ),
                   ],
                 ),
-                IconButton(
-                  icon: Icon(Icons.settings, color: Colors.white, size: 22),
-                  onPressed: () {
-                    print("설정 클릭");
-                  },
-                ),
+                // IconButton(
+                //   icon: Icon(Icons.settings, color: Colors.white, size: 22),
+                //   onPressed: () {
+                //     print("설정 클릭");
+                //   },
+                // ),
+                // Image.asset("assets/logo.png", width: 50, height: 50),
+                SizedBox(width: 44), // 또는 IconButton의 크기만큼
               ],
             ),
           ),
@@ -128,8 +135,8 @@ class _ChatBotScreenState extends State<ChatBotScreen> {
           Padding(
             padding: EdgeInsets.symmetric(vertical: 8),
             child: Text(
-              "오늘",
-              style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
+              "보통 몇 분 내에 응답합니다.",
+              style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
             ),
           ),
 
@@ -231,8 +238,10 @@ class ChatBubble extends StatelessWidget {
             if (!isUser)
               CircleAvatar(
                 radius: 18,
-                backgroundColor: Colors.grey.shade300,
-                child: Icon(avatar, color: Colors.black54),
+                backgroundColor: Colors.indigoAccent,
+                backgroundImage: AssetImage("assets/logo_face_white.png"),
+                // backgroundColor: Colors.grey.shade300,
+                // child: Icon(avatar, color: Colors.black54),
               ),
             if (!isUser) SizedBox(width: 8),
 

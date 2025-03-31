@@ -43,6 +43,14 @@ flutter:
     - assets/mediIcon.jpg
     - assets/Icon.jpg
     - assets/pill.png
+    - assets/logo.png
+    - assets/register.png
+    - assets/pharmacy.png
+    - assets/search.png
+    - assets/analysis.png
+    - assets/cal.png
+    - assets/logo_face_white.png
+
 
 flutter_icons:
   android: true

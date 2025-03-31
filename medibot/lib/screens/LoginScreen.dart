@@ -58,7 +58,8 @@ class _LoginScreenState extends State<LoginScreen> {
       print("✅ 로그인 성공 - 사용자 ID: $loggedInUserId");
 
       SharedPreferences prefs = await SharedPreferences.getInstance();
-      await prefs.setString('userId', userId);
+      prefs.setString('userId', userId);
+      prefs.setBool('isLoggedIn', true);
       // ✅ 로그인 성공 시 화면 초기화 후 홈 화면으로 이동
       Navigator.of(context).pushAndRemoveUntil(
         MaterialPageRoute(builder: (context) => BottomNavBar()), // 홈 화면으로 이동

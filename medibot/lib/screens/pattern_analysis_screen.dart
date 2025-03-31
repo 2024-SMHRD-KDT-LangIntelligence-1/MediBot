@@ -200,9 +200,9 @@ class _PatternAnalysisScreenState extends State<PatternAnalysisScreen> {
     }
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: const Color(0xFFF7F7FC),
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: const Color(0xFFF7F7FC),
         foregroundColor: Colors.black,
         title: const Text("복약 패턴분석"),
       ),
@@ -210,16 +210,17 @@ class _PatternAnalysisScreenState extends State<PatternAnalysisScreen> {
         onRefresh: _loadPatternAnalysis,
         child: SingleChildScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // 상단 타이틀 + 새로고침
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   const Text(
-                    "최근 복약 통계 요약",
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    "복약 패턴 분석",
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
                   ),
                   AnimatedRotation(
                     turns: isRefreshing ? 1 : 0,
@@ -238,71 +239,161 @@ class _PatternAnalysisScreenState extends State<PatternAnalysisScreen> {
                   ),
                 ],
               ),
-              const SizedBox(height: 10),
-              _buildStatRow("✅ 정상 복약", "${normalCount}회", Colors.green),
-              _buildStatRow("⚠️ 주의 필요", "${warningCount}회", Colors.orange),
-              _buildStatRow("🚨 심각", "${dangerCount}회", Colors.red),
-              _buildStatRow("❌ 미복용/정보 없음", "${missedCount}회", Colors.grey),
-              const SizedBox(height: 10),
-              Text(
-                "⏱ 평균 복용 지연: ${avgDelay}분",
-                style: const TextStyle(fontSize: 14),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                "⏰ 가장 많이 복용한 시간대: $mostCommonTime",
-                style: const TextStyle(fontSize: 14),
-              ),
-              const SizedBox(height: 12),
-              const Text(
-                "🧠 AI 요약",
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
-              ),
-              const SizedBox(height: 6),
-              Text(summaryMessage, style: const TextStyle(fontSize: 14)),
-              if (worstTime.isNotEmpty)
-                Text(
-                  "❗ 자주 놓치는 시간대: $worstTime",
-                  style: TextStyle(fontSize: 14, color: Colors.redAccent),
+
+              // 🧠 AI 요약 카드
+              Container(
+                padding: const EdgeInsets.all(16),
+                margin: const EdgeInsets.only(top: 28, bottom: 28),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
                 ),
-              const SizedBox(height: 12),
-              const Text(
-                "📅 요일별 복약 통계",
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
-              ),
-              const SizedBox(height: 8),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: List.generate(7, (index) {
-                  final label = ['일', '월', '화', '수', '목', '금', '토'][index];
-                  final count =
-                      weekdayCount.length > index ? weekdayCount[index] : 0;
-                  return Column(
-                    children: [
-                      Text(
-                        label,
-                        style: const TextStyle(fontWeight: FontWeight.bold),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      "🧠 AI 요약",
+                      style: TextStyle(
+                        fontSize: 17,
+                        fontWeight: FontWeight.w600,
                       ),
-                      const SizedBox(height: 4),
-                      Text(
-                        "$count회",
-                        style: const TextStyle(color: Colors.indigoAccent),
+                    ),
+                    const SizedBox(height: 16),
+                    Text(summaryMessage, style: const TextStyle(fontSize: 15)),
+                    if (worstTime.isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 12),
+                        child: Text(
+                          "❗ 자주 놓치는 시간대: $worstTime",
+                          style: const TextStyle(
+                            fontSize: 15,
+                            color: Colors.redAccent,
+                          ),
+                        ),
                       ),
-                    ],
-                  );
-                }),
+                  ],
+                ),
               ),
-              const SizedBox(height: 12),
-              const Text(
-                "🔮 다음 주 예측",
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+
+              // 📅 요일별 복약 통계 카드
+              Container(
+                padding: const EdgeInsets.all(16),
+                margin: const EdgeInsets.only(bottom: 28),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      "📅 요일별 복약 통계",
+                      style: TextStyle(
+                        fontSize: 17,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: List.generate(7, (index) {
+                        final label =
+                            ['일', '월', '화', '수', '목', '금', '토'][index];
+                        final count =
+                            weekdayCount.length > index
+                                ? weekdayCount[index]
+                                : 0;
+                        return Column(
+                          children: [
+                            Text(
+                              label,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                              "$count회",
+                              style: const TextStyle(
+                                color: Colors.indigoAccent,
+                              ),
+                            ),
+                          ],
+                        );
+                      }),
+                    ),
+                  ],
+                ),
               ),
-              const SizedBox(height: 6),
-              Text(
-                "예상 복약 성공률: $predictedSuccessRate%",
-                style: const TextStyle(fontSize: 14),
+
+              // 📊 최근 복약 통계 요약 카드
+              Container(
+                padding: const EdgeInsets.all(16),
+                margin: const EdgeInsets.only(bottom: 28),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      "최근 복약 통계 요약",
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    _buildStatRow("✅ 정상 복약", "$normalCount회", Colors.green),
+                    const SizedBox(height: 12),
+                    _buildStatRow("⚠️ 주의 필요", "$warningCount회", Colors.orange),
+                    const SizedBox(height: 12),
+                    _buildStatRow("🚨 심각", "$dangerCount회", Colors.red),
+                    const SizedBox(height: 12),
+                    _buildStatRow("❌ 미복용/정보 없음", "$missedCount회", Colors.grey),
+                    const SizedBox(height: 20),
+                    Text(
+                      "⏱ 평균 복용 지연: ${avgDelay}분",
+                      style: const TextStyle(fontSize: 15),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      "⏰ 가장 많이 복용한 시간대: $mostCommonTime",
+                      style: const TextStyle(fontSize: 15),
+                    ),
+                  ],
+                ),
               ),
-              const SizedBox(height: 16),
+
+              // 🔮 다음 주 예측 카드
+              Container(
+                padding: const EdgeInsets.all(16),
+                margin: const EdgeInsets.only(bottom: 32),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      "🔮 다음 주 예측",
+                      style: TextStyle(
+                        fontSize: 17,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      "예상 복약 성공률: $predictedSuccessRate%",
+                      style: const TextStyle(fontSize: 15),
+                    ),
+                  ],
+                ),
+              ),
+
+              // 📅 날짜별 복약 내역 (카드 형태 유지)
               ...groupedByDate.entries.map((entry) {
                 final date = entry.key;
                 final meds = entry.value;
@@ -322,12 +413,13 @@ class _PatternAnalysisScreenState extends State<PatternAnalysisScreen> {
                       },
                       child: Container(
                         padding: const EdgeInsets.symmetric(
-                          vertical: 8,
-                          horizontal: 12,
+                          vertical: 18,
+                          horizontal: 24,
                         ),
+                        margin: const EdgeInsets.only(bottom: 8),
                         decoration: BoxDecoration(
-                          color: Colors.indigoAccent.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(8),
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(12),
                         ),
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -336,6 +428,7 @@ class _PatternAnalysisScreenState extends State<PatternAnalysisScreen> {
                               date,
                               style: const TextStyle(
                                 fontWeight: FontWeight.bold,
+                                fontSize: 16,
                               ),
                             ),
                             Icon(
@@ -354,17 +447,17 @@ class _PatternAnalysisScreenState extends State<PatternAnalysisScreen> {
                         final status = med['status'] ?? '-';
                         return Padding(
                           padding: const EdgeInsets.symmetric(
-                            vertical: 6,
-                            horizontal: 12,
+                            vertical: 10,
+                            horizontal: 0,
                           ),
                           child: Container(
                             padding: const EdgeInsets.symmetric(
-                              vertical: 10,
-                              horizontal: 12,
+                              vertical: 14,
+                              horizontal: 20,
                             ),
                             decoration: BoxDecoration(
-                              color: Colors.indigoAccent.withOpacity(0.05),
-                              borderRadius: BorderRadius.circular(10),
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(12),
                             ),
                             child: Row(
                               children: [
@@ -372,12 +465,12 @@ class _PatternAnalysisScreenState extends State<PatternAnalysisScreen> {
                                   Icons.medication_outlined,
                                   color: Colors.indigoAccent,
                                 ),
-                                const SizedBox(width: 12),
+                                const SizedBox(width: 16),
                                 Expanded(
                                   child: Text(
                                     name,
                                     style: const TextStyle(
-                                      fontSize: 14,
+                                      fontSize: 15,
                                       fontWeight: FontWeight.w500,
                                     ),
                                   ),
@@ -394,7 +487,7 @@ class _PatternAnalysisScreenState extends State<PatternAnalysisScreen> {
                           ),
                         );
                       }).toList(),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 16),
                   ],
                 );
               }).toList(),

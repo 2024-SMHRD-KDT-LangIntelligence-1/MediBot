@@ -167,7 +167,7 @@ class _MedicationRecordScreenState extends State<MedicationRecordScreen> {
                     ),
                     margin: const EdgeInsets.only(bottom: 8),
                     decoration: BoxDecoration(
-                      color: Colors.grey.shade100,
+                      color: Colors.white,
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Row(
@@ -380,7 +380,7 @@ class _MedicationRecordScreenState extends State<MedicationRecordScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Color(0xFFF5F5F5),
+      backgroundColor: const Color(0xFFF8F6FF),
       appBar: AppBar(
         title: const Text(
           "복약 기록",
@@ -415,8 +415,8 @@ class _MedicationRecordScreenState extends State<MedicationRecordScreen> {
             },
           );
         },
-        backgroundColor: Colors.indigoAccent,
-        child: const Icon(Icons.smart_toy_outlined),
+        backgroundColor: Colors.white,
+        child: Image.asset("assets/logo.png", width: 40, height: 40),
       ),
     );
   }
