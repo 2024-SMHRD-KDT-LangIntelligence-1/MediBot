@@ -5,6 +5,7 @@ import com.fiveit.model.Gender;
 import com.fiveit.model.User;
 import com.fiveit.repository.UserRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -14,6 +15,7 @@ import java.util.Optional;
 @Service
 public class UserService {
     private final UserRepository userRepository;
+    private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder(); // 🔐 추가
 
     public UserService(UserRepository userRepository) {
         this.userRepository = userRepository;
@@ -24,6 +26,7 @@ public class UserService {
         if (userRepository.findByUserId(request.getUserId()).isPresent()) {
             throw new IllegalArgumentException("이미 사용 중인 이메일입니다.");
         }
+        String encodedPassword = passwordEncoder.encode(request.getPassword());
 
         // 데이터 변환 (String → LocalDate, LocalTime, Enum)
         LocalDate birthDate = LocalDate.parse(request.getBirthdate());
@@ -35,7 +38,7 @@ public class UserService {
         User user = User.builder()
                 .userId(request.getUserId())
                 .userName(request.getUsername())
-                .userPw(request.getPassword()) // 🔥 평문 저장 (보안 취약)
+                .userPw(encodedPassword) // ✅ 암호화된 비밀번호 저장
                 .birthdate(birthDate)
                 // .age(request.getAge())
                 .gender(gender)
@@ -56,8 +59,8 @@ public class UserService {
             User user = userOpt.get();
 
             // ✅ 저장된 비밀번호와 입력된 비밀번호 단순 비교
-            if (user.getUserPw().equals(password)) {
-                return user; // ✅ 인증 성공
+            if (passwordEncoder.matches(password, user.getUserPw())) {
+                return user;
             }
         }
         return null; // ❌ 인증 실패 시 null 반환

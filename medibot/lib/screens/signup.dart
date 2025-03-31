@@ -117,15 +117,45 @@ class _SignUpScreenState extends State<SignUpScreen> {
         _isIdChecked = !isDuplicate;
       });
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(isDuplicate ? "이미 사용 중인 이메일입니다." : "사용 가능한 이메일입니다!"),
-        ),
+      showCupertinoDialog(
+        context: context,
+        builder:
+            (_) => CupertinoAlertDialog(
+              title: Text("알림"),
+              content: Text(
+                isDuplicate ? "이미 사용 중인 이메일입니다." : "사용 가능한 이메일입니다!",
+              ),
+              actions: [
+                CupertinoDialogAction(
+                  isDefaultAction: true,
+                  onPressed: () => Navigator.pop(context),
+                  child: Text(
+                    "확인",
+                    style: TextStyle(color: Colors.indigoAccent),
+                  ),
+                ),
+              ],
+            ),
       );
     } catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text("이메일 중복 확인 실패: $e")));
+      showCupertinoDialog(
+        context: context,
+        builder:
+            (_) => CupertinoAlertDialog(
+              title: Text("오류"),
+              content: Text("이메일 중복 확인 실패: $e"),
+              actions: [
+                CupertinoDialogAction(
+                  isDefaultAction: true,
+                  onPressed: () => Navigator.pop(context),
+                  child: Text(
+                    "확인",
+                    style: TextStyle(color: Colors.indigoAccent),
+                  ),
+                ),
+              ],
+            ),
+      );
     }
   }
 
@@ -944,6 +974,21 @@ class _MedicationSelectionScreenState extends State<MedicationSelectionScreen> {
   }
 
   void _finalSignUp() async {
+    showCupertinoDialog(
+      context: context,
+      barrierDismissible: false,
+      builder:
+          (_) => CupertinoAlertDialog(
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                CupertinoActivityIndicator(),
+                SizedBox(height: 10),
+                Text("회원가입 진행 중..."),
+              ],
+            ),
+          ),
+    );
     if (selectedMedications.isEmpty) {
       ScaffoldMessenger.of(
         context,
@@ -1013,9 +1058,9 @@ class _MedicationSelectionScreenState extends State<MedicationSelectionScreen> {
       print("✅ 회원가입 및 복약 일정 저장 완료!");
 
       // ✅ 4. 로그인 화면으로 이동 (LoginScreen으로 직접 이동)
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => LoginScreen()),
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (_) => LoginScreen()),
+        (route) => false,
       );
     } catch (e, stackTrace) {
       print("🚨 오류 발생: $e");

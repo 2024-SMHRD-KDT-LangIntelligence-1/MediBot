@@ -3,6 +3,9 @@ import 'package:medibot/services/AuthService.dart';
 import 'package:medibot/screens/LoginScreen.dart';
 import 'package:medibot/screens/signup.dart';
 import 'package:medibot/services/api_service.dart';
+import 'package:medibot/screens/HelpScreen.dart';
+import 'package:medibot/screens/privacy_screen.dart';
+import 'package:medibot/screens/NotificationSettingsScreen.dart';
 
 class MyProfileScreen extends StatefulWidget {
   const MyProfileScreen({super.key});
@@ -55,7 +58,7 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey.shade100, // ✅ 배경을 부드러운 색상으로 변경
+      backgroundColor: Colors.white, // ✅ 배경을 부드러운 색상으로 변경
       appBar: AppBar(
         title: Text(
           "내 정보",
@@ -153,9 +156,26 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
                   thickness: 0.8,
                   color: Colors.grey.shade300,
                 ), // 🔽 선 두께 줄임
-                _buildListTile(Icons.notifications, "알림 설정", () {}),
-                _buildListTile(Icons.lock, "개인정보 보호", () {}),
-                _buildListTile(Icons.help_outline, "도움말 및 지원", () {}),
+                _buildListTile(Icons.notifications, "알림 설정", () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const NotificationSettingsScreen(),
+                    ),
+                  );
+                }),
+                _buildListTile(Icons.lock, "개인정보 보호", () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const PrivacyScreen()),
+                  );
+                }),
+                _buildListTile(Icons.help_outline, "도움말 및 지원", () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const HelpScreen()),
+                  );
+                }),
                 Divider(height: 1, thickness: 0.8, color: Colors.grey.shade300),
 
                 SizedBox(height: 15),

@@ -86,6 +86,12 @@ class NotificationService {
     DateTime time,
   ) async {
     final now = DateTime.now();
+    final prefs = await SharedPreferences.getInstance();
+    final enabled = prefs.getBool("notifications_enabled") ?? true;
+    if (!enabled) {
+      print("🔕 알림 설정 OFF → 알림 예약 건너뜀: $medicineName");
+      return;
+    }
     final today = DateTime(now.year, now.month, now.day);
     final targetDate = DateTime(time.year, time.month, time.day);
 
