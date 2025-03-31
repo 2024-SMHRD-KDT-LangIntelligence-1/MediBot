@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/logo.png" width="80" />
+  <img src="/MediBot/medibot/assets/logo.png" width="80" />
 </p>
 
 <h1 align="center">💊 MediBot</h1>
