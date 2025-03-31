@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://img.icons8.com/fluency/96/pill.png" width="80" />
+  <img src="assets/logo.png" width="80" />
 </p>
 
 <h1 align="center">💊 MediBot</h1>
