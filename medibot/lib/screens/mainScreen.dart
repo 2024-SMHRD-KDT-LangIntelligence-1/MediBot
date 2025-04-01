@@ -29,7 +29,7 @@ class _MainScreenState extends State<MainScreen> {
   bool isRefreshing = false;
   List<int> weekdayCount = [];
   int predictedSuccessRate = 0;
-  bool isLoggedIn = false;
+  String? userId;
 
   @override
   void initState() {
@@ -42,7 +42,7 @@ class _MainScreenState extends State<MainScreen> {
   void _checkLoginStatus() async {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
-      isLoggedIn = prefs.getBool("isLoggedIn")!;
+      userId = prefs.getString("userId"); // userId가 null이면 비로그인
     });
   }
 
@@ -425,8 +425,7 @@ class _MainScreenState extends State<MainScreen> {
   }) {
     return GestureDetector(
       onTap: () {
-        print("🔥 로그인 여부: $isLoggedIn");
-        if (!isLoggedIn) {
+        if (userId == null) {
           showDialog(
             context: context,
             builder:
