@@ -38,6 +38,48 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
     });
   }
 
+  void _confirmAccountDeletion() {
+    showDialog(
+      context: context,
+      builder:
+          (context) => AlertDialog(
+            title: Text("정말로 탈퇴하시겠습니까?"),
+            content: Text("계정을 삭제하면 모든 데이터가 복구되지 않습니다."),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: Text("취소"),
+              ),
+              TextButton(
+                onPressed: () async {
+                  Navigator.of(context).pop(); // 닫기
+                  await _deleteAccount(); // 실제 삭제
+                },
+                child: Text("탈퇴", style: TextStyle(color: Colors.red)),
+              ),
+            ],
+          ),
+    );
+  }
+
+  Future<void> _deleteAccount() async {
+    try {
+      // ✅ 계정 삭제 API 호출
+      await ApiService.deleteAccount(_userId!);
+
+      // ✅ 탈퇴 후 로그인 화면으로 이동
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (_) => LoginScreen()),
+        (route) => false,
+      );
+    } catch (e) {
+      print("❌ 회원 탈퇴 실패: $e");
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text("회원 탈퇴에 실패했습니다. 다시 시도해주세요.")));
+    }
+  }
+
   // void _loadUserData() async {
   //   String? storedUserId = await ApiService.getUserId();
   //   setState(() {
@@ -196,6 +238,21 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
                       fontSize: 14,
                       color: Colors.white,
                     ), // 🔽 크기 조정
+                  ),
+                ),
+                // ✅ 회원 탈퇴 버튼
+                TextButton(
+                  onPressed: _confirmAccountDeletion,
+                  style: TextButton.styleFrom(
+                    backgroundColor: Colors.grey.shade200,
+                    minimumSize: Size(double.infinity, 45),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
+                  child: Text(
+                    "회원 탈퇴",
+                    style: TextStyle(fontSize: 14, color: Colors.redAccent),
                   ),
                 ),
               ],

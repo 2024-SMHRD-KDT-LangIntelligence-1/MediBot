@@ -1,5 +1,11 @@
+import 'dart:convert';
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:http/http.dart' as http;
+import 'package:image_picker/image_picker.dart';
+import 'package:intl/intl.dart';
 import '/services/StorageManager.dart';
 import 'package:medibot/services/api_service.dart';
 import 'LoginScreen.dart';
@@ -41,6 +47,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _confirmPasswordController =
       TextEditingController();
+
   final TextEditingController _ageController =
       TextEditingController(); // ✅ 나이 입력 필드 추가
   void _selectBirthDate(BuildContext context) {
@@ -243,6 +250,17 @@ class _SignUpScreenState extends State<SignUpScreen> {
                       style: TextStyle(fontSize: 16, color: Colors.black),
                     ),
                     Icon(Icons.calendar_today, color: Colors.grey),
+                    TextButton(
+                      onPressed: () {
+                        setState(() {
+                          _selectedBirthDate = null;
+                        });
+                      },
+                      child: Text(
+                        "건너뛰기",
+                        style: TextStyle(color: Colors.blueAccent),
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -259,7 +277,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
                             _nameController.text,
                             _idController.text,
                             _passwordController.text,
-                            "${_selectedBirthDate!.year}-${_selectedBirthDate!.month.toString().padLeft(2, '0')}-${_selectedBirthDate!.day.toString().padLeft(2, '0')}",
+                            _selectedBirthDate != null
+                                ? "${_selectedBirthDate!.year}-${_selectedBirthDate!.month.toString().padLeft(2, '0')}-${_selectedBirthDate!.day.toString().padLeft(2, '0')}"
+                                : null, // null 전달
                           );
                           Navigator.push(
                             context,
@@ -412,6 +432,20 @@ class _GenderSelectionScreenState extends State<GenderSelectionScreen> {
               children: [_genderButton("남성"), _genderButton("여성")],
             ),
             Spacer(),
+            TextButton(
+              onPressed: () {
+                setState(() {
+                  selectedGender = null;
+                });
+                StorageManager().saveGender(null);
+
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => SleepScheduleScreen()),
+                );
+              },
+              child: Text("건너뛰기", style: TextStyle(color: Colors.blueAccent)),
+            ),
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
@@ -963,6 +997,11 @@ class _MedicationSelectionScreenState extends State<MedicationSelectionScreen> {
   ];
   List<String> selectedMedications = []; // ✅ 여러 개의 약 저장 리스트
 
+  TextEditingController _medicationController = TextEditingController();
+  List<DateTime> _selectedDates = [];
+  List<String> _formattedDates = [];
+  String? _ocrDetectedName;
+
   void _toggleMedicationSelection(String medication) {
     setState(() {
       if (selectedMedications.contains(medication)) {
@@ -971,6 +1010,173 @@ class _MedicationSelectionScreenState extends State<MedicationSelectionScreen> {
         selectedMedications.add(medication);
       }
     });
+  }
+
+  Future<String?> _handleOCRForSignup() async {
+    print("📥 OCR 함수 진입 (Naver Cloud OCR)");
+
+    final picker = ImagePicker();
+    final pickedFile = await picker.pickImage(source: ImageSource.camera);
+
+    if (pickedFile == null) {
+      print("📷 이미지 선택 취소됨");
+      return null;
+    }
+
+    final bytes = await File(pickedFile.path).readAsBytes();
+    final base64Image = base64Encode(bytes);
+
+    final url = Uri.parse(
+      "https://8mx810cn8e.apigw.ntruss.com/custom/v1/39498/3ab994bd8699d77e4b09ed85f26e9d71a204c2a32f4006cc2481c5b1549b2762/general",
+    );
+    final headers = {
+      "X-OCR-SECRET": "bmNsTklGSFFOWnlqSVNKZG9KeE5CTWRId3R3Z0NDeUE=",
+      "Content-Type": "application/json",
+    };
+
+    final body = jsonEncode({
+      "version": "V2",
+      "requestId": "medireg_ocr",
+      "timestamp": DateTime.now().millisecondsSinceEpoch,
+      "images": [
+        {"format": "jpg", "name": "ocr_image", "data": base64Image},
+      ],
+    });
+
+    try {
+      final response = await http.post(url, headers: headers, body: body);
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        final fields = data['images'][0]['fields'] as List<dynamic>;
+
+        // OCR 전체 텍스트 연결
+        final allText = fields.map((f) => f['inferText'].toString()).join(' ');
+        print("🧠 OCR 전체 텍스트: $allText");
+
+        // 단어 단위 나누기
+        final words =
+            allText
+                .split(RegExp(r'\s+'))
+                .map((w) => w.trim())
+                .where((w) => w.isNotEmpty)
+                .toList();
+
+        // 필터링된 후보 단어
+        final candidates =
+            words.where((word) {
+              return word.contains(RegExp(r'[가-힣]')) &&
+                  word.length >= 2 &&
+                  word.length <= 30 &&
+                  !word.contains(
+                    RegExp(r'(제조자|수입자|서울특별시|의약품안전나라|https|품목허가사항|식약처|용산구|판매)'),
+                  );
+            }).toList();
+
+        print("🔍 후보 단어: $candidates");
+
+        String? matchedDrug;
+
+        for (final word in candidates) {
+          final matches = await ApiService.searchDrugByName(word);
+          print("🟢 검색 결과 리스트: ${matches.length}개");
+          print("📡 응답 본문: $matches");
+
+          if (matches.isNotEmpty) {
+            final keyword =
+                word.replaceAll(RegExp(r'[^가-힣a-zA-Z0-9]'), '').toLowerCase();
+
+            final banList = [
+              '우먼스',
+              '어린이',
+              '콜드',
+              '에스',
+              '8시간',
+              '서방',
+              '현탁액',
+              '코드',
+              '액',
+              '이알',
+              '시럽',
+            ];
+
+            List<String> smartFilter(List<String> list) {
+              return list.where((item) {
+                final lower = item.toLowerCase();
+                final cleaned = lower.replaceAll(
+                  RegExp(r'(정|밀리그램|500|160|250|정제|서방정)'),
+                  '',
+                );
+                return cleaned.contains(keyword) &&
+                    !banList.any((ban) => lower.contains(ban));
+              }).toList();
+            }
+
+            // 1순위: 스마트 필터로 남은 약
+            final preferred = smartFilter(matches);
+            if (preferred.isNotEmpty) {
+              preferred.sort((a, b) => a.length.compareTo(b.length));
+              matchedDrug = preferred.first;
+              print("✅ 스마트 필터링 대표 약: $matchedDrug");
+            } else {
+              // fallback: keyword 포함한 애들 중 제일 짧은 거
+              final fallback =
+                  matches
+                      .where((m) => m.toLowerCase().contains(keyword))
+                      .toList();
+              if (fallback.isNotEmpty) {
+                fallback.sort((a, b) => a.length.compareTo(b.length));
+                matchedDrug = fallback.first;
+                print("⚠️ fallback 사용된 약: $matchedDrug");
+              } else {
+                print("💀 최종 fallback: 아무거나 선택");
+                matches.sort((a, b) => a.length.compareTo(b.length));
+                matchedDrug = matches.first;
+              }
+            }
+
+            break;
+          }
+        }
+        print("🔍 백엔드 매칭 결과: $matchedDrug");
+
+        if (matchedDrug != null && matchedDrug.isNotEmpty) {
+          print("✅ 최종 약 이름: $matchedDrug");
+          setState(() {
+            _medicationController.text = matchedDrug!;
+          });
+        } else {
+          print("❌ 약 이름 인식 실패");
+        }
+
+        // 날짜 자동 선택
+        if (allText.contains("하루 1회") || allText.contains("매일 복용")) {
+          final now = DateTime.now();
+          final twoWeeks = List<DateTime>.generate(
+            14,
+            (i) => now.add(Duration(days: i)),
+          );
+
+          setState(() {
+            _selectedDates = twoWeeks;
+            _formattedDates =
+                twoWeeks
+                    .map((d) => DateFormat('yyyy-MM-dd').format(d))
+                    .toList();
+          });
+
+          print("📅 '하루 1회' 또는 '매일 복용' 감지됨 → 2주 날짜 자동 선택 완료");
+        } else {
+          print("📅 날짜 자동 선택 조건 해당 없음");
+        }
+      } else {
+        print("❌ 네이버 OCR API 실패: ${response.body}");
+      }
+    } catch (e) {
+      print("❌ 예외 발생: $e");
+    }
+
+    return null;
   }
 
   void _finalSignUp() async {
@@ -1011,8 +1217,8 @@ class _MedicationSelectionScreenState extends State<MedicationSelectionScreen> {
         userId: userData["user"]["email"], // ✅ 이제 그냥 ID로 사용 (이메일 아님)
         username: userData["user"]["name"],
         password: userData["user"]["password"],
-        birthdate: userData["user"]["birthdate"], // ✅ YYYY-MM-DD 형식 전달
-        gender: userData["gender"] ?? "M",
+        birthdate: userData["user"]["birthdate"] ?? "", // 👈 null-safe 처리
+        gender: userData["gender"] ?? "", // 👈 null-safe 처리
         wakeUpTime: formatTime(userData["sleepSchedule"]["wakeUp"]),
         sleepTime: formatTime(userData["sleepSchedule"]["bedTime"]),
       );
@@ -1074,82 +1280,126 @@ class _MedicationSelectionScreenState extends State<MedicationSelectionScreen> {
 
   void _addNewMedication() {
     TextEditingController medicationController = TextEditingController();
+    String? ocrResult;
     showDialog(
       context: context,
       builder: (context) {
-        return Dialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(20.0),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  "새로운 약 추가",
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black,
-                  ),
-                ),
-                SizedBox(height: 10),
-                TextField(
-                  controller: medicationController,
-                  decoration: InputDecoration(
-                    hintText: "약 이름 입력",
-                    filled: true,
-                    fillColor: Colors.white,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide.none,
-                    ),
-                    contentPadding: EdgeInsets.symmetric(
-                      vertical: 14,
-                      horizontal: 16,
-                    ),
-                  ),
-                  style: TextStyle(color: Colors.black),
-                ),
-                SizedBox(height: 20),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return Dialog(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(20.0),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    TextButton(
-                      onPressed: () => Navigator.pop(context),
-                      child: Text(
-                        "취소",
-                        style: TextStyle(color: Colors.indigoAccent),
+                    Text(
+                      "약 추가하기 (OCR 지원)",
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black,
                       ),
                     ),
-                    ElevatedButton(
-                      onPressed: () {
-                        if (medicationController.text.isNotEmpty) {
-                          setState(() {
-                            medications.add(medicationController.text);
-                          });
-                        }
-                        Navigator.pop(context);
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.indigoAccent,
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
+                    SizedBox(height: 10),
+                    if (_ocrDetectedName != null)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 6.0),
+                        child: Text(
+                          "📸 인식된 약 이름: $_ocrDetectedName",
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: Colors.indigo,
+                          ),
                         ),
                       ),
-                      child: Text("추가"),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: medicationController,
+                            decoration: InputDecoration(
+                              hintText: "약 이름 입력",
+                              filled: true,
+                              fillColor: Colors.grey[200],
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide.none,
+                              ),
+                              contentPadding: EdgeInsets.symmetric(
+                                vertical: 14,
+                                horizontal: 16,
+                              ),
+                            ),
+                            style: TextStyle(color: Colors.black),
+                          ),
+                        ),
+                        SizedBox(width: 8),
+                        IconButton(
+                          icon: Icon(
+                            Icons.camera_alt,
+                            color: Colors.indigoAccent,
+                          ),
+                          onPressed: () async {
+                            String? result = await _handleOCRForSignup();
+                            if (result != null && result.isNotEmpty) {
+                              setState(() {
+                                _ocrDetectedName = result;
+                              });
+                            }
+                          },
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: 20),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(context),
+                          child: Text(
+                            "취소",
+                            style: TextStyle(color: Colors.indigoAccent),
+                          ),
+                        ),
+                        ElevatedButton(
+                          onPressed: () {
+                            if (medicationController.text.isNotEmpty) {
+                              setState(() {
+                                medications.add(medicationController.text);
+                                selectedMedications.add(
+                                  medicationController.text,
+                                ); // 자동 선택도 함께 수행
+                              });
+                            }
+                            Navigator.pop(context, true);
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.indigoAccent,
+                            foregroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          child: Text("추가"),
+                        ),
+                      ],
                     ),
                   ],
                 ),
-              ],
-            ),
-          ),
+              ),
+            );
+          },
         );
       },
-    );
+    ).then((value) {
+      if (value == true) {
+        setState(() {});
+      }
+    });
   }
 
   @override

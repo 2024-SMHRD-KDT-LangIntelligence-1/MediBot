@@ -148,6 +148,22 @@ class _SearchInfoScreenState extends State<SearchInfoScreen> {
                     ),
                   ),
                 ],
+                const SizedBox(height: 24),
+
+                Center(
+                  child: Text(
+                    "※ 본 앱은 일반적인 건강 정보를 제공하며,\n"
+                    "전문적인 의학적 진단이나 치료를 대체하지 않습니다.\n"
+                    "정확한 의학적 판단을 위해 반드시 의사와 상담하시기 바랍니다.\n\n"
+                    "출처: 식품의약품안전처 의약품개요정보 (nedrug.mfds.go.kr)",
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.grey,
+                      height: 1.5,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
               ],
             ),
           );

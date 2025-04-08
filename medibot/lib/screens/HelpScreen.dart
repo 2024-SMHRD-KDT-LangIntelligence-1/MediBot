@@ -85,6 +85,13 @@ class HelpScreen extends StatelessWidget {
               child: const Text("문의하기", style: TextStyle(color: Colors.white)),
             ),
           ),
+          const SizedBox(height: 30),
+          Text(
+            "이 앱은 일반적인 건강 정보를 제공하며, 전문적인 의학적 진단이나 치료를 대체하지 않습니다. "
+            "정확한 의학적 판단을 위해 의사와 상담하시기 바랍니다.",
+            style: TextStyle(fontSize: 13, color: Colors.grey, height: 1.6),
+            textAlign: TextAlign.center,
+          ),
         ],
       ),
     );

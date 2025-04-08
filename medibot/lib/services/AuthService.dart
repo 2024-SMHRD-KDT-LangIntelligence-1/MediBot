@@ -3,14 +3,12 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 class AuthService {
-  static const String _tokenKey = "authToken";
-  static const String _baseUrl =
-      "http://your-spring-boot-server.com"; // 🔥 스프링 부트 서버 주소
+  static const String baseUrl = "http://223.130.139.153:9090";
 
   // ✅ 회원가입 요청
   static Future<bool> register(String email, String password) async {
     final response = await http.post(
-      Uri.parse("$_baseUrl/auth/register"),
+      Uri.parse("$baseUrl/auth/register"),
       headers: {"Content-Type": "application/json"},
       body: jsonEncode({"email": email, "password": password}),
     );

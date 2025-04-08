@@ -5,7 +5,8 @@ import com.fasterxml.jackson.annotation.JsonValue;
 
 public enum Gender {
     M("남성"),
-    F("여성");
+    F("여성"),
+    UNKNOWN("미지정");
 
     private final String korean;
 
@@ -25,6 +26,6 @@ public enum Gender {
                 return g;
             }
         }
-        throw new IllegalArgumentException("Unknown gender: " + value);
+        return UNKNOWN;
     }
 }

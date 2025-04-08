@@ -22,7 +22,7 @@ class StorageManager {
     String name,
     String email,
     String password,
-    String birthdate,
+    String? birthdate,
   ) {
     _storage["user"] = {
       "name": name,
@@ -34,7 +34,7 @@ class StorageManager {
   }
 
   // ✅ 성별 저장
-  void saveGender(String gender) {
+  void saveGender(String? gender) {
     _storage["gender"] = gender;
     print("📌 [저장 완료] 성별: $_storage");
   }

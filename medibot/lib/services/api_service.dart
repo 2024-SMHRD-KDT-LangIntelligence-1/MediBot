@@ -6,12 +6,28 @@ import 'package:http/http.dart' as http;
 
 class ApiService {
   // static const String baseUrl = "http://localhost:9090";
-  static const String baseUrl = "http://192.168.219.251:9090";
+  // static const String baseUrl = "http://192.168.219.201:9090";
+  static const String baseUrl = "http://223.130.139.153:9090";
 
   static String convertGenderToEnum(String gender) {
     if (gender == "남성") return "M";
     if (gender == "여성") return "F";
     return "UNKNOWN"; // 예외 처리를 위해 기본값 추가
+  }
+
+  /// ✅ 사용자 정보 조회 API
+  static Future<Map<String, dynamic>> getUserInfo(String userId) async {
+    final response = await http.get(
+      Uri.parse('$baseUrl/api/auth/info/$userId'),
+      headers: {"Content-Type": "application/json"},
+    );
+
+    if (response.statusCode == 200) {
+      final decoded = jsonDecode(utf8.decode(response.bodyBytes));
+      return decoded; // 예: { "age": 27, "gender": "남성" }
+    } else {
+      throw Exception("🚨 사용자 정보 조회 실패: ${response.body}");
+    }
   }
 
   static Future<String> signUp({
@@ -69,6 +85,18 @@ class ApiService {
     } else {
       throw Exception("🚨 복약 일정 저장 실패: ${response.body}");
     }
+  }
+
+  static Future<void> deleteAccount(String userId) async {
+    final response = await http.delete(
+      Uri.parse('$baseUrl/api/auth/delete/$userId'), // 여기에 실제 API URL 입력
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception('계정 삭제 실패');
+    }
+
+    await logout(); // local 정보 정리
   }
 
   /// **사용자의 복약 일정 목록 조회**
@@ -368,6 +396,47 @@ class ApiService {
           .toList();
     } else {
       throw Exception("🚨 복약 패턴 분석 실패: ${response.body}");
+    }
+  }
+
+  static Future<String> predictNextTime() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? userId = prefs.getString("userId");
+
+    if (userId == null) {
+      throw Exception("🚨 사용자 ID 없음");
+    }
+
+    final response = await http.get(
+      Uri.parse("$baseUrl/api/model/predict?userId=$userId"),
+      headers: {"Content-Type": "application/json"},
+    );
+
+    if (response.statusCode == 200) {
+      final Map<String, dynamic> json = jsonDecode(response.body);
+      return json["recommended_time_str"] ?? "";
+    } else {
+      throw Exception("🚨 예측 요청 실패: ${response.body}");
+    }
+  }
+
+  static Future<String> updateModel() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? userId = prefs.getString("userId");
+
+    if (userId == null) {
+      throw Exception("🚨 사용자 ID 없음");
+    }
+
+    final response = await http.post(
+      Uri.parse("$baseUrl/api/model/update?userId=$userId"),
+      headers: {"Content-Type": "application/json"},
+    );
+
+    if (response.statusCode == 200) {
+      return response.body;
+    } else {
+      throw Exception("🚨 모델 업데이트 실패: ${response.body}");
     }
   }
 }

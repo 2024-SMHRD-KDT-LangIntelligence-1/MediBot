@@ -41,7 +41,7 @@ class _LoginScreenState extends State<LoginScreen> {
     setState(() {
       _isLoginEnabled =
           _emailController.text.isNotEmpty &&
-          _passwordController.text.length >= 8;
+          _passwordController.text.isNotEmpty;
     });
   }
 
@@ -83,7 +83,12 @@ class _LoginScreenState extends State<LoginScreen> {
         elevation: 0,
         leading: IconButton(
           icon: Icon(Icons.arrow_back, color: Colors.black), // 뒤로가기 버튼
-          onPressed: () => Navigator.pop(context),
+          onPressed: () {
+            Navigator.of(context).pushAndRemoveUntil(
+              MaterialPageRoute(builder: (_) => BottomNavBar()),
+              (Route<dynamic> route) => false,
+            );
+          },
         ),
         title: Text(
           "로그인",
@@ -133,7 +138,7 @@ class _LoginScreenState extends State<LoginScreen> {
               controller: _passwordController,
               obscureText: !_isPasswordVisible,
               decoration: InputDecoration(
-                labelText: "비밀번호 (영문+숫자, 8자리 이상)",
+                labelText: "비밀번호",
                 labelStyle: TextStyle(color: Colors.grey),
                 filled: true,
                 fillColor: Colors.grey.shade100,

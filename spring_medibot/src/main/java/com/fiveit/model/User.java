@@ -26,11 +26,11 @@ public class User {
     @Column(name = "user_name", nullable = false)
     private String userName;
 
-    @Column(name = "user_birthdate", nullable = false)
+    @Column(name = "user_birthdate")
     private LocalDate birthdate;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "user_gender", nullable = false)
+    @Column(name = "user_gender")
     private Gender gender;
 
     @Column(name = "wakeup_tm")
@@ -41,4 +41,5 @@ public class User {
 
     @Column(name = "joined_at", updatable = false)
     private Date joinedAt;
+
 }

@@ -3,7 +3,11 @@ package com.fiveit.Service;
 import com.fiveit.dto.SignUpRequest;
 import com.fiveit.model.Gender;
 import com.fiveit.model.User;
+import com.fiveit.repository.MedicationScheduleRepository;
 import com.fiveit.repository.UserRepository;
+
+import jakarta.transaction.Transactional;
+
 import org.springframework.stereotype.Service;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
@@ -16,9 +20,11 @@ import java.util.Optional;
 public class UserService {
     private final UserRepository userRepository;
     private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder(); // 🔐 추가
+    private final MedicationScheduleRepository scheduleRepository;
 
-    public UserService(UserRepository userRepository) {
+    public UserService(UserRepository userRepository, MedicationScheduleRepository scheduleRepository) {
         this.userRepository = userRepository;
+        this.scheduleRepository = scheduleRepository;
     }
 
     public User registerUser(SignUpRequest request) {
@@ -29,10 +35,15 @@ public class UserService {
         String encodedPassword = passwordEncoder.encode(request.getPassword());
 
         // 데이터 변환 (String → LocalDate, LocalTime, Enum)
-        LocalDate birthDate = LocalDate.parse(request.getBirthdate());
+        LocalDate birthDate = (request.getBirthdate() != null && !request.getBirthdate().isEmpty())
+                ? LocalDate.parse(request.getBirthdate())
+                : null;
         LocalTime wakeUpTime = request.getWakeUpTime() != null ? LocalTime.parse(request.getWakeUpTime()) : null;
         LocalTime sleepTime = request.getSleepTime() != null ? LocalTime.parse(request.getSleepTime()) : null;
-        Gender gender = Gender.valueOf(request.getGender()); // "M" 또는 "F"를 ENUM으로 변환
+        Gender gender = (request.getGender() != null && !request.getGender().isEmpty())
+                ? Gender.valueOf(request.getGender())
+                : null; // "M" 또는 "F"를 ENUM으로
+                        // 변환
 
         // 사용자 저장 (비밀번호 암호화 제거)
         User user = User.builder()
@@ -68,5 +79,23 @@ public class UserService {
 
     public boolean isUserIdDuplicate(String userId) {
         return userRepository.findByUserId(userId).isPresent();
+    }
+
+    @Transactional
+    public void deleteUserById(String userId) {
+        // 1. 사용자 존재 확인
+        User user = userRepository.findByUserId(userId)
+                .orElseThrow(() -> new IllegalArgumentException("해당 사용자를 찾을 수 없습니다."));
+
+        // 2. 먼저 복약 일정 삭제
+        scheduleRepository.deleteAllByUserId(userId); // <- 이 메서드 추가 필요
+
+        // 3. 사용자 삭제
+        userRepository.delete(user);
+    }
+
+    public User findUserByUserId(String userId) {
+        return userRepository.findByUserId(userId)
+                .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
     }
 }

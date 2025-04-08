@@ -13,6 +13,7 @@ import 'package:intl/intl.dart';
 import '../services/api_service.dart';
 import 'package:flutter_typeahead/flutter_typeahead.dart';
 import 'package:http/http.dart' as http;
+import 'package:string_similarity/string_similarity.dart'; // pubspec.yaml에 추가 필요
 
 class MedicationRegistrationScreen extends StatefulWidget {
   const MedicationRegistrationScreen({super.key});
@@ -40,7 +41,7 @@ class _MedicationRegistrationScreenState
     });
   }
 
-  Future<void> _handleOCRAndSetData() async {
+  Future<String?> _handleOCRAndSetData() async {
     print("📥 OCR 함수 진입 (Naver Cloud OCR)");
 
     final picker = ImagePicker();
@@ -48,9 +49,8 @@ class _MedicationRegistrationScreenState
 
     if (pickedFile == null) {
       print("📷 이미지 선택 취소됨");
-      return;
+      return null;
     }
-    print("📸 pickedFile: ${pickedFile.path}");
 
     final bytes = await File(pickedFile.path).readAsBytes();
     final base64Image = base64Encode(bytes);
@@ -60,16 +60,12 @@ class _MedicationRegistrationScreenState
     );
     final headers = {
       "X-OCR-SECRET": "bmNsTklGSFFOWnlqSVNKZG9KeE5CTWRId3R3Z0NDeUE=",
-      // "X-NCP-APIGW-API-KEY-ID":
-      //     "ncp_iam_BPASKR2wlPWfDF43vUz5", // <-- 여기에 본인의 클라이언트 ID 입력
-      // "X-NCP-APIGW-API-KEY":
-      //     "ncp_iam_BPKSKRS6jvEwzyasM6bdGJwiM65o2tVMkB", // <-- 여기에 본인의 클라이언트 SECRET 입력
       "Content-Type": "application/json",
     };
 
     final body = jsonEncode({
       "version": "V2",
-      "requestId": "sample_id",
+      "requestId": "medireg_ocr",
       "timestamp": DateTime.now().millisecondsSinceEpoch,
       "images": [
         {"format": "jpg", "name": "ocr_image", "data": base64Image},
@@ -82,61 +78,108 @@ class _MedicationRegistrationScreenState
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         final fields = data['images'][0]['fields'] as List<dynamic>;
-        final allText = fields.map((f) => f['inferText'].toString()).join(' ');
-        print("🧠 OCR 전체 인식 텍스트 (Naver): $allText");
 
-        final lines =
+        // OCR 전체 텍스트 연결
+        final allText = fields.map((f) => f['inferText'].toString()).join(' ');
+        print("🧠 OCR 전체 텍스트: $allText");
+
+        // 단어 단위 나누기
+        final words =
             allText
                 .split(RegExp(r'\s+'))
-                .map((e) => e.trim())
-                .where((e) => e.isNotEmpty)
+                .map((w) => w.trim())
+                .where((w) => w.isNotEmpty)
                 .toList();
 
-        print("🔍 분리된 텍스트 라인: $lines");
-
+        // 필터링된 후보 단어
         final candidates =
-            lines.where((line) {
-              return line.contains(RegExp(r'[가-힣]')) &&
-                  line.length >= 2 &&
-                  line.length <= 30 &&
-                  !line.contains(
-                    RegExp(
-                      r'(제조자|수입자|서울특별시|https|의약품안전나라|품목허가사항|용산구|식품의약품안전처|참조|용산타워|판매)',
-                    ),
+            words.where((word) {
+              return word.contains(RegExp(r'[가-힣]')) &&
+                  word.length >= 2 &&
+                  word.length <= 30 &&
+                  !word.contains(
+                    RegExp(r'(제조자|수입자|서울특별시|의약품안전나라|https|품목허가사항|식약처|용산구|판매)'),
                   );
             }).toList();
 
-        print("🔍 후보 라인: $candidates");
+        print("🔍 후보 단어: $candidates");
 
         String? matchedDrug;
-        for (final line in candidates) {
-          final matches = await ApiService.searchDrugByName(line);
+
+        for (final word in candidates) {
+          final matches = await ApiService.searchDrugByName(word);
+          print("🟢 검색 결과 리스트: ${matches.length}개");
+          print("📡 응답 본문: $matches");
+
           if (matches.isNotEmpty) {
-            matchedDrug = matches.first;
+            final keyword =
+                word.replaceAll(RegExp(r'[^가-힣a-zA-Z0-9]'), '').toLowerCase();
+
+            final banList = [
+              '우먼스',
+              '어린이',
+              '콜드',
+              '에스',
+              '8시간',
+              '서방',
+              '현탁액',
+              '코드',
+              '액',
+              '이알',
+              '시럽',
+            ];
+
+            List<String> smartFilter(List<String> list) {
+              return list.where((item) {
+                final lower = item.toLowerCase();
+                final cleaned = lower.replaceAll(
+                  RegExp(r'(정|밀리그램|500|160|250|정제|서방정)'),
+                  '',
+                );
+                return cleaned.contains(keyword) &&
+                    !banList.any((ban) => lower.contains(ban));
+              }).toList();
+            }
+
+            // 1순위: 스마트 필터로 남은 약
+            final preferred = smartFilter(matches);
+            if (preferred.isNotEmpty) {
+              preferred.sort((a, b) => a.length.compareTo(b.length));
+              matchedDrug = preferred.first;
+              print("✅ 스마트 필터링 대표 약: $matchedDrug");
+            } else {
+              // fallback: keyword 포함한 애들 중 제일 짧은 거
+              final fallback =
+                  matches
+                      .where((m) => m.toLowerCase().contains(keyword))
+                      .toList();
+              if (fallback.isNotEmpty) {
+                fallback.sort((a, b) => a.length.compareTo(b.length));
+                matchedDrug = fallback.first;
+                print("⚠️ fallback 사용된 약: $matchedDrug");
+              } else {
+                print("💀 최종 fallback: 아무거나 선택");
+                matches.sort((a, b) => a.length.compareTo(b.length));
+                matchedDrug = matches.first;
+              }
+            }
+
             break;
           }
         }
+        print("🔍 백엔드 매칭 결과: $matchedDrug");
 
-        print("🔍 백엔드 검색 결과에서 매칭된 약 이름: $matchedDrug");
-
-        final cleaned =
-            (matchedDrug ?? '')
-                .replaceAll(RegExp(r'[^가-힣0-9a-zA-Z ]'), '')
-                .trim();
-
-        print("✅ 정제된 약 이름: $cleaned");
-
-        if (cleaned.isNotEmpty) {
+        if (matchedDrug != null && matchedDrug.isNotEmpty) {
+          print("✅ 최종 약 이름: $matchedDrug");
           setState(() {
-            _medicationController.text = cleaned;
+            _medicationController.text = matchedDrug!;
           });
         } else {
           print("❌ 약 이름 인식 실패");
         }
 
+        // 날짜 자동 선택
         if (allText.contains("하루 1회") || allText.contains("매일 복용")) {
-          print("📅 '하루 1회' 또는 '매일 복용' 문구 감지됨 → 2주치 날짜 자동 선택");
-
           final now = DateTime.now();
           final twoWeeks = List<DateTime>.generate(
             14,
@@ -150,8 +193,10 @@ class _MedicationRegistrationScreenState
                     .map((d) => DateFormat('yyyy-MM-dd').format(d))
                     .toList();
           });
+
+          print("📅 '하루 1회' 또는 '매일 복용' 감지됨 → 2주 날짜 자동 선택 완료");
         } else {
-          print("📅 자동 날짜 선택 조건에 해당 없음");
+          print("📅 날짜 자동 선택 조건 해당 없음");
         }
       } else {
         print("❌ 네이버 OCR API 실패: ${response.body}");
@@ -159,6 +204,8 @@ class _MedicationRegistrationScreenState
     } catch (e) {
       print("❌ 예외 발생: $e");
     }
+
+    return null;
   }
 
   void _validateAndSubmit() async {
@@ -336,6 +383,23 @@ class _MedicationRegistrationScreenState
                 ],
               ),
               const SizedBox(height: 200),
+              const SizedBox(height: 20),
+
+              Center(
+                child: Text(
+                  "※ 본 앱은 일반적인 건강 정보를 제공하며,\n"
+                  "전문적인 의학적 진단이나 치료를 대체하지 않습니다.\n"
+                  "정확한 의학적 판단을 위해 반드시 의사와 상담하시기 바랍니다.\n\n"
+                  "출처: 식품의약품안전처 의약품개요정보 (nedrug.mfds.go.kr)",
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey,
+                    height: 1.5,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+              const SizedBox(height: 40),
             ],
           ),
         ),

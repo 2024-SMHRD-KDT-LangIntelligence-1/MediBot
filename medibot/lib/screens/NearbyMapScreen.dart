@@ -114,7 +114,7 @@ class _KakaoMapPharmacyScreenState extends State<KakaoMapPharmacyScreen> {
                     onMapCreated: (controller) async {
                       mapController = controller;
 
-                      await Future.delayed(const Duration(milliseconds: 300));
+                      await Future.delayed(const Duration(milliseconds: 500));
                       controller.setLevel(3);
                     },
                     markers: markers,

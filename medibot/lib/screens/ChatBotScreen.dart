@@ -34,7 +34,7 @@ class _ChatBotScreenState extends State<ChatBotScreen> {
   Future<void> _sendMessageToServer(String text) async {
     try {
       var response = await http.post(
-        Uri.parse('http://192.168.219.244:9090/api/chat'),
+        Uri.parse('http://223.130.139.153:9090/api/chat'),
         headers: {"Content-Type": "application/json"},
         body: jsonEncode({"message": text}),
       );
@@ -161,6 +161,18 @@ class _ChatBotScreenState extends State<ChatBotScreen> {
           ),
 
           SizedBox(height: 12),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Text(
+              "※ 본 앱은 일반적인 건강 정보를 제공하며,\n"
+              "전문적인 의학적 진단이나 치료를 대체하지 않습니다.\n"
+              "정확한 의학적 판단을 위해 반드시 의사와 상담하시기 바랍니다.\n\n"
+              "출처: 식품의약품안전처 의약품개요정보 (nedrug.mfds.go.kr)",
+              style: TextStyle(fontSize: 11.5, color: Colors.grey, height: 1.5),
+              textAlign: TextAlign.center,
+            ),
+          ),
+          SizedBox(height: 6),
           Container(
             padding: EdgeInsets.only(left: 16, right: 16, bottom: 8, top: 12),
             decoration: BoxDecoration(color: Color(0xFFE7EBF0)),

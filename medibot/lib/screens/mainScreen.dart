@@ -30,6 +30,13 @@ class _MainScreenState extends State<MainScreen> {
   List<int> weekdayCount = [];
   int predictedSuccessRate = 0;
   String? userId;
+  Map<String, String>? supplement1;
+  Map<String, String>? supplement2;
+  int? userInfoAge;
+  String? userInfoGender;
+
+  String? userAgeGroup;
+  String? userGenderLabel;
 
   @override
   void initState() {
@@ -44,6 +51,152 @@ class _MainScreenState extends State<MainScreen> {
     setState(() {
       userId = prefs.getString("userId"); // userId가 null이면 비로그인
     });
+    if (userId != null) _loadUserInfoAndRecommend(); // ✅ 추천 호출
+  }
+
+  void _loadUserInfoAndRecommend() async {
+    try {
+      final userInfo = await ApiService.getUserInfo(userId!);
+      final int age = userInfo['age'];
+      final String gender = userInfo['gender']; // ← 이거도 같이
+
+      final ageGroup = _getAgeGroup(age);
+      final fullList = _recommendSupplements(ageGroup, gender);
+      final randomTwo = _getRandomTwo(fullList);
+
+      setState(() {
+        supplement1 = randomTwo[0];
+        supplement2 = randomTwo[1];
+        userInfoAge = age;
+        userInfoGender = gender;
+        userAgeGroup = ageGroup; // 예: "20대"
+        userGenderLabel = gender; // 예: "남성"
+      });
+    } catch (e) {
+      print("🚨 유저 정보 불러오기 실패: $e");
+    }
+  }
+
+  String _getAgeGroup(int age) {
+    if (age < 20) return "10대 이하";
+    if (age < 30) return "20대";
+    if (age < 40) return "30대";
+    if (age < 50) return "40대";
+    return "50대 이상";
+  }
+
+  List<Map<String, String>> _recommendSupplements(String age, String gender) {
+    if (age == "20대" && gender == "남성") {
+      return [
+        {"name": "센트룸 포 맨", "desc": "에너지 활력, 면역력 강화"},
+        {"name": "오메가3", "desc": "혈액순환, 눈 건강"},
+        {"name": "아르기닌", "desc": "운동 능력 향상"},
+        {"name": "비타민B", "desc": "피로 회복"},
+        {"name": "루테인", "desc": "눈 피로 개선"},
+        {"name": "프로바이오틱스", "desc": "장 건강"},
+        {"name": "비타민D", "desc": "면역력 및 뼈 건강"},
+      ];
+    }
+
+    if (age == "20대" && gender == "여성") {
+      return [
+        {"name": "철분 + 엽산", "desc": "빈혈 예방, 여성 건강"},
+        {"name": "비오틴", "desc": "머릿결, 손톱 강화"},
+        {"name": "콜라겐", "desc": "피부 탄력, 노화 방지"},
+        {"name": "오메가3", "desc": "혈액순환, 두뇌 건강"},
+        {"name": "종합비타민", "desc": "필수 영양소 보충"},
+        {"name": "유산균", "desc": "장 건강 개선"},
+        {"name": "비타민D", "desc": "면역력 및 뼈 건강"},
+      ];
+    }
+
+    if (age == "30대" && gender == "남성") {
+      return [
+        {"name": "센트룸 포 맨", "desc": "기초 체력 보충"},
+        {"name": "마그네슘", "desc": "근육 피로 개선"},
+        {"name": "아연", "desc": "면역력 유지"},
+        {"name": "오메가3", "desc": "심혈관 건강"},
+        {"name": "비타민C", "desc": "항산화, 면역 강화"},
+        {"name": "루테인", "desc": "눈 건강"},
+        {"name": "유산균", "desc": "소화 기능 개선"},
+      ];
+    }
+
+    if (age == "30대" && gender == "여성") {
+      return [
+        {"name": "철분 + 엽산", "desc": "피로 회복, 여성 건강"},
+        {"name": "콜라겐", "desc": "피부 탄력, 노화 예방"},
+        {"name": "칼슘", "desc": "뼈 건강"},
+        {"name": "마그네슘", "desc": "근육, 신경 안정"},
+        {"name": "크릴오일", "desc": "혈행 개선"},
+        {"name": "비오틴", "desc": "모발 건강"},
+        {"name": "종합비타민", "desc": "일상 필수 영양"},
+      ];
+    }
+
+    if (age == "40대" && gender == "남성") {
+      return [
+        {"name": "비타민D", "desc": "뼈 건강, 면역력"},
+        {"name": "루테인", "desc": "눈 건강"},
+        {"name": "코엔자임 Q10", "desc": "심혈관 건강"},
+        {"name": "마그네슘", "desc": "스트레스 개선"},
+        {"name": "오메가3", "desc": "혈압, 콜레스테롤 관리"},
+        {"name": "아연", "desc": "남성 기능 및 면역"},
+        {"name": "프로폴리스", "desc": "호흡기 건강"},
+      ];
+    }
+
+    if (age == "40대" && gender == "여성") {
+      return [
+        {"name": "칼슘 + 비타민D", "desc": "골다공증 예방"},
+        {"name": "콜라겐", "desc": "피부 건강"},
+        {"name": "크릴오일", "desc": "혈행 개선"},
+        {"name": "비오틴", "desc": "모발, 손발톱 강화"},
+        {"name": "마그네슘", "desc": "신경 안정"},
+        {"name": "유산균", "desc": "소화 기능 향상"},
+        {"name": "철분", "desc": "빈혈 예방"},
+      ];
+    }
+
+    if (age == "50대 이상" && gender == "남성") {
+      return [
+        {"name": "오메가3", "desc": "심혈관 질환 예방"},
+        {"name": "루테인", "desc": "황반변성 예방"},
+        {"name": "코엔자임 Q10", "desc": "피로 개선"},
+        {"name": "비타민D", "desc": "골다공증 예방"},
+        {"name": "쏘팔메토", "desc": "전립선 건강"},
+        {"name": "마그네슘", "desc": "혈압 안정화"},
+        {"name": "종합비타민", "desc": "일상 영양 보충"},
+      ];
+    }
+
+    if (age == "50대 이상" && gender == "여성") {
+      return [
+        {"name": "칼슘 + 비타민D", "desc": "골다공증 예방"},
+        {"name": "이소플라본", "desc": "갱년기 증상 완화"},
+        {"name": "크릴오일", "desc": "혈행 개선"},
+        {"name": "루테인", "desc": "눈 건강"},
+        {"name": "콜라겐", "desc": "피부 탄력"},
+        {"name": "유산균", "desc": "소화 기능 향상"},
+        {"name": "종합비타민", "desc": "기초 영양 보충"},
+      ];
+    }
+
+    // 기본값
+    return [
+      {"name": "종합비타민", "desc": "기본적인 영양 보충"},
+      {"name": "비타민C", "desc": "피로 회복, 면역력 유지"},
+      {"name": "루테인", "desc": "눈 건강"},
+      {"name": "오메가3", "desc": "혈액순환"},
+      {"name": "비타민D", "desc": "면역력"},
+      {"name": "유산균", "desc": "장 건강"},
+      {"name": "아연", "desc": "면역세포 활성화"},
+    ];
+  }
+
+  List<Map<String, String>> _getRandomTwo(List<Map<String, String>> list) {
+    list.shuffle();
+    return list.take(2).toList();
   }
 
   Future<void> _loadPatternAnalysis() async {
@@ -409,7 +562,127 @@ class _MainScreenState extends State<MainScreen> {
                         );
                       }).toList(),
                 ),
+            if (userId != null &&
+                supplement1 != null &&
+                supplement2 != null) ...[
+              const SizedBox(height: 30),
+
+              // ✅ 박스 밖 제목
+              Text(
+                "$userAgeGroup $userGenderLabel 맞춤 영양제 추천",
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 10),
+
+              // ✅ 박스 내부는 깔끔한 리스트 스타일로
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(
+                  vertical: 16,
+                  horizontal: 20,
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.05),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // 💊 추천 영양제 1
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Icon(
+                          Icons.local_hospital,
+                          color: Colors.indigoAccent,
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                supplement1!['name']!,
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 15,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                supplement1!['desc']!,
+                                style: const TextStyle(
+                                  fontSize: 13,
+                                  color: Colors.black54,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+
+                    // 💊 추천 영양제 2
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Icon(
+                          Icons.local_hospital,
+                          color: Colors.indigoAccent,
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                supplement2!['name']!,
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 15,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                supplement2!['desc']!,
+                                style: const TextStyle(
+                                  fontSize: 13,
+                                  color: Colors.black54,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
             const SizedBox(height: 30),
+            const SizedBox(height: 12),
+            const SizedBox(height: 30),
+
+            const Text(
+              "※ 본 앱은 일반적인 건강 정보를 제공하며, 전문적인 의학적 진단이나 치료를 대체하지 않습니다.\n정확한 의학적 판단을 위해 반드시 의료 전문가와 상담하시기 바랍니다.\n\n출처: 식품의약품안전처 의약품 개요 정보 (nedrug.mfds.go.kr)",
+              style: TextStyle(
+                fontSize: 11,
+                color: Colors.black54,
+                height: 1.5,
+              ),
+              textAlign: TextAlign.center,
+            ),
           ],
         ),
       ),
