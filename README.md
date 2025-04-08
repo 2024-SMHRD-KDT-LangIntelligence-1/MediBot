@@ -72,7 +72,7 @@
 | 김수지 | PM / Data Modeling | PM, LLAMA 모델 모델링 | [GitHub](https://github.com/Suji2i) |
 | 이은정 | Back-End | 백엔드 API 설계, 발표 | [GitHub](https://github.com/jmueeo) |
 | 오도영 | Full Stack, DB | 앱 전체 UI,UX , 백엔드 API, DB 구성| [GitHub](https://github.com/ohdoyoung) |
-| 정희석 | PM / Front-End | LLAMA 모델 모델링 | [GitHub](https://github.com/082918) |
+| 정희석 | PM / Front-End | LLAMA 모델 모델링 |  |
 | 노이린 | DB | DB, 산출문서 |  |
 
 ## 🤾‍♂️ 트러블슈팅
